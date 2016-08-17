@@ -1,0 +1,3 @@
+powerzip==0.0.1
+adbwrapper==0.0.1
+filetype==0.1.3
