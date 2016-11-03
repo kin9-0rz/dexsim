@@ -28,7 +28,7 @@ def baksmali(dex_file, output_dir='out'):
     '''
     dex to smali
     '''
-    cmd = 'baksmali %s -o %s' % (dex_file, output_dir)
+    cmd = 'baksmali d %s -o %s' % (dex_file, output_dir)
     subprocess.call(cmd, shell=True)
 
     return output_dir
@@ -38,7 +38,7 @@ def smali(smali_dir, output_file='out.dex'):
     '''
     smali to dex
     '''
-    cmd = 'smali %s -o %s' % (smali_dir, output_file)
+    cmd = 'smali a %s -o %s' % (smali_dir, output_file)
     subprocess.call(cmd, shell=True)
 
     return output_file
