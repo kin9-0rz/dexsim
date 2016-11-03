@@ -10,6 +10,8 @@
 '''
 
 from json import JSONEncoder
+import tempfile
+import os
 
 
 class Plugin(object):
