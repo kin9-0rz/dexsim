@@ -8,7 +8,7 @@ import shutil
 import zipfile
 import tempfile
 
-import filetype
+from magic import Magic
 import powerzip
 
 from .dexsim.smali_file import SmaliFile
@@ -46,6 +46,7 @@ def smali(smali_dir, output_file='out.dex'):
 
 def main(args):
     include_str = args.i
+    print()
 
     if os.path.isdir(args.f):
         if args.f.endswith('\\') or args.f.endswith('/'):
@@ -55,7 +56,7 @@ def main(args):
         dex_file = smali(smali_dir, os.path.basename(smali_dir) + '.dex')
         dexsim(dex_file, smali_dir, include_str)
         smali(smali_dir, os.path.basename(smali_dir) + '.sim.dex')
-    elif filetype.guess_extension(args.f) == 'zip':
+    elif Magic(args.f, is_file=True).get_extension == '.apk':
         apk_path = args.f
 
         apk_sim_path = os.path.splitext(args.f)[0] + '.sim.apk'

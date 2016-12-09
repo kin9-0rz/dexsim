@@ -22,7 +22,7 @@ class SmaliFile:
         with open(file_path, 'r', encoding='utf-8') as f:
             self.content = f.read()
 
-        class_regex = '.class%s (L[^;]+;)' % self.accessor_regex
+        class_regex = '\.class%s (L[^;]+;)' % self.accessor_regex
         p = re.compile(class_regex)
         try:
             line = p.search(self.content).group()
@@ -31,24 +31,24 @@ class SmaliFile:
         idx = line.rindex(' ')
         self.class_name = line[idx + 1:]
 
-        super_regex = '.super (L[^;]+;)'
+        super_regex = '\.super (L[^;]+;)'
         p = re.compile(super_regex)
         line = p.search(self.content).group()
         self.super = line[7:]
 
-        interfaces_regex = '.implements (L[^;]+;)'
+        interfaces_regex = '\.implements (L[^;]+;)'
         p = re.compile(interfaces_regex)
         for i in p.finditer(self.content):
             self.interfaces.append(i.group().replace('.implements ', ''))
 
-        field_regex = '.field %s [^\s]+' % self.accessor_regex
+        field_regex = '\.field %s [^\s]+' % self.accessor_regex
         p = re.compile(field_regex)
         for i in p.finditer(self.content):
             line = i.group()
             idx = line.rindex(' ')
             self.fields.append(SmaliField(self.class_name, line[idx + 1:]))
 
-        method_regex = '.method [%s\s-]+ [^\s]+' % self.accessor_regex
+        method_regex = '\.method [%s\s-]+ [^\s]+' % self.accessor_regex
         p = re.compile(method_regex)
         for i in p.finditer(self.content):
             line = i.group()
