@@ -1,6 +1,5 @@
 # coding:utf-8
 
-import sys
 import hashlib
 from json import JSONEncoder
 import re
@@ -14,7 +13,7 @@ __all__ = ["STRING"]
 class STRING(Plugin):
 
     name = "STRING"
-    version = '0.0.3'
+    version = '0.0.2'
     # make_changes = False
 
     def __init__(self, driver, methods, smali_files):
@@ -29,10 +28,10 @@ class STRING(Plugin):
     def __process_1_argument(self):
 
         '''
-
             const-string v3, "F7095AB6386E1D0567FBB5D11AF2268ADC7FB9C7F82756AA"
 
-            invoke-static {v3}, Lcom/android/google/mfee/GoogleEncryption;->decryptData2(Ljava/lang/String;)Ljava/lang/String;
+            invoke-static {v3}, Lcom/android/google/mfee/GoogleEncryption;->decryptData2
+                (Ljava/lang/String;)Ljava/lang/String;
 
             move-result-object v3
 
@@ -40,11 +39,18 @@ class STRING(Plugin):
 
             const-string v3, "------decode result-------"
 
+            其他字符串的情况，可能匹配不上：
+            const-string v1, "&\u0008%\u000c"
+            invoke-static {v1}, Lkris/myapplication/c;->a(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object v1
+
         '''
 
-        INVOKE_STATIC = 'invoke-static \{[vp]\d+}, L([^;]+);->([^\(]+\(Ljava/lang/String;\))Ljava/lang/String;\s+'
-
+        INVOKE_STATIC = r'''invoke-static \{[vp]\d+}, L([^;]+);->
+            ([^\(]+\(Ljava/lang/String;\))Ljava/lang/String;\s+'''
+        
         p = re.compile('\s+' + self.CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
+        #print('this is __process_1_argument')
         #print('\s+' + self.CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
 
         json_list = []
@@ -54,21 +60,29 @@ class STRING(Plugin):
                 test = {}
                 line = i.group()
 
+                const_str = re.findall("\".+", line)[-1]
+                # print(line)
+                # print(const_str)
+                # print(const_str[1:-1])
+
                 # get arguments
                 args = []
-                start = line.index('"')
-                end = line.rindex('"')
-                s = line[start + 1:end]
+                # start = line.index('"')
+                # end = line.rindex('"')
+                # s = line[start + 1:end]
 
                 arg1 = []
-                for item in s.encode("UTF-8"):
+                for item in const_str[1:-1].encode("UTF-8"):
                     arg1.append(item)
                 args.append("java.lang.String:" + str(arg1))
+                # print(args)
+                # print('-' * 100)
 
                 # get classname
                 start = line.index('}, L')
                 end = line.index(';->')
                 classname = line[start + 4:end].replace('/', '.')
+                # print('classname', )
 
                 # get method name
                 args_index = line.index('(Ljava/lang/String;)')
@@ -95,26 +109,26 @@ class STRING(Plugin):
                     json_list.append(test)
 
         self.optimizations(json_list, target_contexts)
-
+        
     def __process_2_argument(self):
         ESCAPE_STRING = '''"(.*?)"'''
         CONST_STRING = 'const-string [vp]\d+, ' + ESCAPE_STRING + '.*\s+'
         INVOKE_STATIC = 'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\))Ljava/lang/String;\s+'
 
         p = re.compile('\s+' + CONST_STRING + CONST_STRING + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
-
+        
         json_list = []
         target_contexts = {}
         for mtd in self.methods:
             for i in p.finditer(mtd.body):
                 test = {}
                 line = i.group()
-
+         
                 # get arguments
                 args = []
                 match_string = re.compile(CONST_STRING)
                 for j in match_string.finditer(line):
-                    const_str = re.findall("\w+", j.group())[-1]
+                    const_str = re.findall("\w+",j.group())[-1]
                     arg = []
                     for item in const_str.encode("UTF-8"):
                         arg.append(item)
@@ -166,9 +180,9 @@ class STRING(Plugin):
             ==>
 
             const-string v0, "------decode result-------"
-
+            
             ---------------------------------------------------------
-
+            
             const-string v29, "b3547fe0b848a8c73e30d89c473cd167"
 
             const-string v30, "07e942bf3a4751a9c188cf652d6dbe03"
@@ -179,28 +193,44 @@ class STRING(Plugin):
 
             move-result-object v29
 
+            -------------------------
+
+            const-string v7, "20bb21a548d01d8ff9cbebd1fc53d5ec"
+
+            const-string v8, "a342bbcc85268df9e4a7f9e1307d6015"
+
+            const-string v9, "6c7a9f8014ed32b5"
+
+            invoke-static {v7, v8, v9}, Lnpnojrqk/niwjucst/oifhebjg/uihmjzfs/agntdkrh/xumvnbpc/jqwutfvs/dfkxcwot/hcsplder;->alxrefmv(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+            :try_end_69
+            .catch Ljava/lang/Exception; {:try_start_60 .. :try_end_69} :catch_59
+
+            move-result-object v3
+
+
+    
         '''
         ESCAPE_STRING = '''"(.*?)"'''
         CONST_STRING = 'const-string [vp]\d+, ' + ESCAPE_STRING + '.*\s+'
         INVOKE_STATIC = 'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\))Ljava/lang/String;\s+'
 
         p = re.compile('\s+' + CONST_STRING + CONST_STRING + CONST_STRING + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
-
-        #print("this is strings 3")
-        #print('\s+' + CONST_STRING + '\s+' + CONST_STRING + '\s+' + CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
+        
+        # print("this is strings 3")
+        # print('\s+' + CONST_STRING + '\s+' + CONST_STRING + '\s+'  + CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
         json_list = []
         target_contexts = {}
         for mtd in self.methods:
             for i in p.finditer(mtd.body):
                 test = {}
                 line = i.group()
-
+         
                 # TODO 后续再考虑使用通用的方式获取参数
                 # get arguments
                 args = []
                 match_string = re.compile(CONST_STRING)
                 for j in match_string.finditer(line):
-                    const_str = re.findall("\w+", j.group())[-1]
+                    const_str = re.findall("\w+",j.group())[-1]
                     arg = []
                     for item in const_str.encode("UTF-8"):
                         arg.append(item)

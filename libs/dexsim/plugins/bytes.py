@@ -65,9 +65,6 @@ class BYTES(Plugin):
         NEW_INSTANCE = 'new-instance [vp]\d+, Ljava\/lang\/String;'
         STRING_INIT = 'invoke-direct {[vp]\d+, [vp]\d+}, Ljava\/lang\/String;-><init>\(\[B\)V'
 
-        # print('\s+' + self.CONST_NUMBER + '\s+' + NEW_ARRAY + '\s+' +
-        #       FILL_ARRAY_DATA + '\s+((' + NEW_INSTANCE + ')\s+)+')
-
         p1 = re.compile('\s+' + self.CONST_NUMBER + '\s+' + NEW_ARRAY + '\s+' +
                         FILL_ARRAY_DATA + '\s+((' + NEW_INSTANCE + ')\s+)*' +
                         STRING_INIT)

@@ -52,7 +52,6 @@ class Plugin(object):
 
         with tempfile.NamedTemporaryFile(mode='w+', delete=False) as fp:
             fp.write(jsons)
-        print("???", fp.name)
         outputs = self.driver.decode(fp.name)
         os.unlink(fp.name)
 

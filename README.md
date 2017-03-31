@@ -22,7 +22,7 @@ Note: Please make sure you cmd can run baksmali/smali, adb, java.
 - [x] func(Ljava/lang/String;)Ljava/lang/String;
 - [x] func(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 - [x] func(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
-- [ ] func(I)Ljava/lang/String;
-- [ ] func(II)Ljava/lang/String;
+- [x] func(I)Ljava/lang/String;
+- [x] func(II)Ljava/lang/String;
 - [x] func(III)Ljava/lang/String;
-- [ ] fun(Ljava/lang/String;)[B ---> Ljava/lang/String;-><init>([B)V
+- [x] fun(Ljava/lang/String;)[B ---> Ljava/lang/String;-><init>([B)V
