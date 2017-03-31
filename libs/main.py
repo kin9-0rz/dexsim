@@ -56,7 +56,7 @@ def main(args):
         dex_file = smali(smali_dir, os.path.basename(smali_dir) + '.dex')
         dexsim(dex_file, smali_dir, include_str)
         smali(smali_dir, os.path.basename(smali_dir) + '.sim.dex')
-    elif Magic(args.f, is_file=True).get_extension == '.apk':
+    elif Magic(args.f).get_type == 'apk':
         apk_path = args.f
 
         apk_sim_path = os.path.splitext(args.f)[0] + '.sim.apk'

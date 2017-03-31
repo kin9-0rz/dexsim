@@ -186,11 +186,15 @@ class BYTES(Plugin):
 
     def optimizations(self, json_list, target_contexts):
         jsons = JSONEncoder().encode(json_list)
+        print(jsons)
 
-        with tempfile.TemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile() as fp:
             fp.write(jsons.encode('utf-8'))
-        outputs = self.driver.decode(fp.name)
-        os.unlink(fp.name)
+            print(fp.name)
+            outputs = self.driver.decode(fp.name)
+        print(outputs)
+        print('---->>>>optimizations')
+        # os.unlink(fp.name)
 
         for key in outputs:
             if 'success' in outputs[key]:
