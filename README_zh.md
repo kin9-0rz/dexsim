@@ -23,7 +23,7 @@
 - [x] func(I)Ljava/lang/String;
 - [x] func(II)Ljava/lang/String;
 - [x] func(III)Ljava/lang/String;
-- [ ] fun(Ljava/lang/String;)[B ---> Ljava/lang/String;-><init>([B)V
+- [x] fun(Ljava/lang/String;)[B ---> Ljava/lang/String;-><init>([B)V
 
 ### 解密插件
 
