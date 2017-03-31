@@ -45,7 +45,7 @@ class STRING(Plugin):
         INVOKE_STATIC = 'invoke-static \{[vp]\d+}, L([^;]+);->([^\(]+\(Ljava/lang/String;\))Ljava/lang/String;\s+'
 
         p = re.compile('\s+' + self.CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
-        print('\s+' + self.CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
+        #print('\s+' + self.CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
 
         json_list = []
         target_contexts = {}
@@ -186,8 +186,8 @@ class STRING(Plugin):
 
         p = re.compile('\s+' + CONST_STRING + CONST_STRING + CONST_STRING + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
 
-        print("this is strings 3")
-        print('\s+' + CONST_STRING + '\s+' + CONST_STRING + '\s+' + CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
+        #print("this is strings 3")
+        #print('\s+' + CONST_STRING + '\s+' + CONST_STRING + '\s+' + CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
         json_list = []
         target_contexts = {}
         for mtd in self.methods:
