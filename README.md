@@ -16,7 +16,7 @@ Note: Please make sure you cmd can run baksmali/smali, adb, java.
 1. Conect to a Device or Emulator
 2. `dexsim.bat smali_dir/dex/apk`
 
-# Support
+### Support
 
 - [x] Ljava/lang/String;->\<init>([B)V
 - [x] func(Ljava/lang/String;)Ljava/lang/String;
