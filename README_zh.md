@@ -24,3 +24,7 @@
 - [ ] func(II)Ljava/lang/String;
 - [x] func(III)Ljava/lang/String;
 - [ ] fun(Ljava/lang/String;)[B ---> Ljava/lang/String;-><init>([B)V
+
+### 解密插件
+
+支持插件编写。插件目录在`libs/dexsim/plugins`下，具体请参考现有解密插件代码。
