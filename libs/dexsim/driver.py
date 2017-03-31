@@ -12,7 +12,7 @@ from adbwrapper import ADB
 class Driver:
     def __init__(self):
         self.adb = ADB()
-        self.cmd_stub = "export CLASSPATH=/data/local/od.zip; app_process /system/bin org.cf.oracle.Driver"
+        self.cmd_stub = ['export', 'CLASSPATH=/data/local/od.zip;', 'app_process', '/system/bin', 'org.cf.oracle.Driver']
 
     def install(self, target_dex):
         '''
@@ -28,38 +28,47 @@ class Driver:
         dx_path = os.path.join(root_path, "res", 'dx-19.1.0.jar')
         driver_path = os.path.join(root_path, "res", 'driver.dex')
 
-        merged_dex = tempfile.TemporaryFile()
-        merged_dex.close()
-        cmd = "java -cp %s com.android.dx.merge.DexMerger %s %s %s" % (dx_path, merged_dex.name, target_dex, driver_path)
+        merged_dex = 'merged.dex'
+        cmd = "java -cp %s com.android.dx.merge.DexMerger %s %s %s" % (dx_path, merged_dex, target_dex, driver_path)
         subprocess.call(cmd, shell=True)
         print('Pushing merged driver to device ...')
 
-        tmp_zip = tempfile.TemporaryFile()
-        tmp_zip.close()
-        pzip = PowerZip(tmp_zip.name)
-        pzip.add('classes.dex', merged_dex.name)
-        pzip.save(tmp_zip.name)
+        merged_apk = 'merged.apk'
+        pzip = PowerZip(merged_apk)
+        pzip.add('classes.dex', merged_dex)
+        pzip.save(merged_apk)
         pzip.close()
 
-        self.adb.run_cmd('push %s /data/local/od.zip' % tmp_zip.name)
+        self.adb.run_cmd(['push', merged_apk, '/data/local/od.zip'])
+        print(self.adb.get_output())
 
-        os.remove(merged_dex.name)
-        os.remove(tmp_zip.name)
+        # os.remove(merged_dex.name)
+        # os.remove(tmp_zip.name)
 
     def decode(self, tmpfile):
-        self.adb.run_cmd('push %s /data/local/od-targets.json' % tmpfile)
-        self.adb.shell_command(self.cmd_stub + ' @/data/local/od-targets.json;')
+        print(tmpfile, "push ---->>>>>")
+        self.adb.run_cmd(['push', tmpfile, '/data/local/od-targets.json'])
+        print(self.adb.get_output())
+        self.cmd_stub.append('@/data/local/od-targets.json;')
+        self.adb.shell_command(self.cmd_stub)
+        print(self.adb.get_output())
 
-        output_file = tempfile.TemporaryFile(mode='w+', delete=False)
-        self.adb.run_cmd('pull /data/local/od-output.json %s' % output_file.name)
+        output_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
+        print(output_file.name, "test , NamedTemporaryFile")
+        # self.adb.run_cmd(['pull', '/data/local/od-output.json', output_file.name])
+        self.adb.run_cmd(['pull', '/data/local/od-output.json', 'result.json'])
+        print(self.adb.get_output())
+        # print('>>>>', output_file.name)
 
         try:
+            output_file = open('result.json')
+            # s = json.load(output_file)
             s = json.load(output_file)
             output_file.close()
-            os.unlink(output_file.name)
+            # os.unlink(output_file.name)
             return s
         except FileNotFoundError:
-            print(self.adb.shell_command('cat /data/local/od-exception.txt'))
-            self.adb.shell_command('rm /data/local/od-exception.txt')
-            os.unlink(output_file.name)
+            self.adb.shell_command(['cat', '/data/local/od-exception.txt'])
+            # self.adb.shell_command(['rm', '/data/local/od-exception.txt'])
+            # os.unlink(output_file.name)
             return ''
