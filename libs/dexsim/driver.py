@@ -40,35 +40,24 @@ class Driver:
         pzip.close()
 
         self.adb.run_cmd(['push', merged_apk, '/data/local/od.zip'])
-        print(self.adb.get_output())
 
-        # os.remove(merged_dex.name)
-        # os.remove(tmp_zip.name)
+        os.remove(merged_apk)
+        os.remove(merged_dex)
 
     def decode(self, tmpfile):
-        print(tmpfile, "push ---->>>>>")
         self.adb.run_cmd(['push', tmpfile, '/data/local/od-targets.json'])
-        print(self.adb.get_output())
         self.cmd_stub.append('@/data/local/od-targets.json;')
         self.adb.shell_command(self.cmd_stub)
-        print(self.adb.get_output())
 
         output_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
-        print(output_file.name, "test , NamedTemporaryFile")
-        # self.adb.run_cmd(['pull', '/data/local/od-output.json', output_file.name])
         self.adb.run_cmd(['pull', '/data/local/od-output.json', 'result.json'])
-        print(self.adb.get_output())
-        # print('>>>>', output_file.name)
 
         try:
             output_file = open('result.json')
-            # s = json.load(output_file)
             s = json.load(output_file)
             output_file.close()
-            # os.unlink(output_file.name)
+            os.unlink(output_file.name)
             return s
         except FileNotFoundError:
             self.adb.shell_command(['cat', '/data/local/od-exception.txt'])
-            # self.adb.shell_command(['rm', '/data/local/od-exception.txt'])
-            # os.unlink(output_file.name)
             return ''
