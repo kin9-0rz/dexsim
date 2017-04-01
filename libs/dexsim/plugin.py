@@ -55,16 +55,21 @@ class Plugin(object):
             fp.write(jsons)
         outputs = self.driver.decode(fp.name)
         os.unlink(fp.name)
-
+        
         # 替换内存
+        # outpus 存放的是解密后的结果。
         for key in outputs:
             if 'success' in outputs[key]:
                 if key not in target_contexts.keys():
+                    print('not found', key)
                     continue
                 for item in target_contexts[key]:
                     old_body = item[0].body
                     target_context = item[1]
                     new_context = item[2] + outputs[key][1]
+                    # It's not a string.
+                    if 'null' == outputs[key][1]:
+                        continue
                     item[0].body = old_body.replace(target_context, new_context)
                     item[0].modified = True
                     self.make_changes = True

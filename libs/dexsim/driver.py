@@ -12,7 +12,7 @@ from adbwrapper import ADB
 class Driver:
     def __init__(self):
         self.adb = ADB()
-        self.cmd_stub = ['export', 'CLASSPATH=/data/local/od.zip;', 'app_process', '/system/bin', 'org.cf.oracle.Driver']
+        self.cmd_stub = ['export', 'CLASSPATH=/data/local/od.zip;', 'app_process', '/system/bin', 'org.cf.oracle.Driver', '@/data/local/od-targets.json;']
 
     def install(self, target_dex):
         '''
@@ -46,18 +46,19 @@ class Driver:
 
     def decode(self, tmpfile):
         self.adb.run_cmd(['push', tmpfile, '/data/local/od-targets.json'])
-        self.cmd_stub.append('@/data/local/od-targets.json;')
         self.adb.shell_command(self.cmd_stub)
 
         output_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
-        self.adb.run_cmd(['pull', '/data/local/od-output.json', 'result.json'])
+        self.adb.run_cmd(['pull', '/data/local/od-output.json', output_file.name])
+        self.adb.shell_command(['rm', '/data/local/od-output.json'])
 
         try:
-            output_file = open('result.json')
+            output_file = open(output_file.name, encoding='utf-8')
             s = json.load(output_file)
             output_file.close()
             os.unlink(output_file.name)
             return s
-        except FileNotFoundError:
-            self.adb.shell_command(['cat', '/data/local/od-exception.txt'])
+        except json.decoder.JSONDecodeError:
+            self.adb.run_cmd(['pull', '/data/local/od-exception.txt', 'exception.txt'])
+            self.adb.shell_command(['rm', '/data/local/od-exception.txt'])
             return ''
