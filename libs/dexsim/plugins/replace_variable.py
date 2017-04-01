@@ -65,9 +65,7 @@ class ReplaceVariable(Plugin):
                     line = i.group()
                     old_context = line
                     new_context = line.replace(
-                        'sget-object', 'const-string').replace(key,
-                                                               fields[key])
-                    # print(old_context, '->', new_context)
+                        'sget-object', 'const-string').replace(key, fields[key])
                     mtd.body = mtd.body.replace(old_context, new_context)
                     mtd.modified = True
                     self.make_changes = True
@@ -95,15 +93,12 @@ class ReplaceVariable(Plugin):
             for i in p.finditer(mtd.body):
                 line = i.group()
 
-                # print(line)
-
                 tmps = line.split()
                 opcode = tmps[0]
                 value = tmps[2]
                 field_sign = tmps[5]
 
                 fields[field_sign] = (opcode, value)
-                # print(fields)
 
         if len(fields) == 0:
             return
@@ -116,7 +111,6 @@ class ReplaceVariable(Plugin):
 
                     new_context = fields[key][0] + ' ' + line.split()[1] + ' ' + fields[key][1]
                     old_context = line
-                    print(old_context, '->', new_context)
                     mtd.body = mtd.body.replace(old_context, new_context)
                     mtd.modified = True
                     self.make_changes = True
@@ -144,15 +138,12 @@ class ReplaceVariable(Plugin):
             for i in p.finditer(mtd.body):
                 old_context = i.group()
 
-                print("old_context ---->>>>>>>", old_context)
-
                 tmp = old_context.split('"')
                 old_value = '"' + tmp[3] + '"'
                 new_value = '"' + tmp[1] + tmp[3] + '"'
                 index = old_context.rindex('\n\n    const-string ')
                 new_context = old_context[index:].replace(old_value, new_value)
 
-                # print(old_context, '->', new_context)
                 mtd.body = mtd.body.replace(old_context, new_context)
                 mtd.modified = True
                 self.make_changes = True
