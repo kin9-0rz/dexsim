@@ -20,7 +20,8 @@ class Plugin(object):
     version = ''
 
     CONST_NUMBER = 'const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)'
-    ESCAPE_STRING = '''"(.*?)(?<!\\\\)"'''
+    # ESCAPE_STRING = '''"(.*?)(?<!\\\\)"'''
+    ESCAPE_STRING = '''"(.*?)"'''
     CONST_STRING = 'const-string [vp]\d+, ' + ESCAPE_STRING + '.*'
     MOVE_RESULT_OBJECT = 'move-result-object ([vp]\d+)'
 
@@ -58,6 +59,9 @@ class Plugin(object):
         # 替换内存
         for key in outputs:
             if 'success' in outputs[key]:
+                if key not in target_contexts.keys():
+                    print(key, outputs)
+                    continue
                 for item in target_contexts[key]:
                     old_body = item[0].body
                     target_context = item[1]

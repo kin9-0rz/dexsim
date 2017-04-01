@@ -46,12 +46,9 @@ class STRING(Plugin):
 
         '''
 
-        INVOKE_STATIC = r'''invoke-static \{[vp]\d+}, L([^;]+);->
-            ([^\(]+\(Ljava/lang/String;\))Ljava/lang/String;\s+'''
-        
+        INVOKE_STATIC = r'''invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(Ljava/lang/String;\))Ljava/lang/String;\s+'''
+
         p = re.compile('\s+' + self.CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
-        #print('this is __process_1_argument')
-        #print('\s+' + self.CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
 
         json_list = []
         target_contexts = {}
@@ -61,28 +58,18 @@ class STRING(Plugin):
                 line = i.group()
 
                 const_str = re.findall("\".+", line)[-1]
-                # print(line)
-                # print(const_str)
-                # print(const_str[1:-1])
 
                 # get arguments
                 args = []
-                # start = line.index('"')
-                # end = line.rindex('"')
-                # s = line[start + 1:end]
-
                 arg1 = []
                 for item in const_str[1:-1].encode("UTF-8"):
                     arg1.append(item)
                 args.append("java.lang.String:" + str(arg1))
-                # print(args)
-                # print('-' * 100)
 
                 # get classname
                 start = line.index('}, L')
                 end = line.index(';->')
                 classname = line[start + 4:end].replace('/', '.')
-                # print('classname', )
 
                 # get method name
                 args_index = line.index('(Ljava/lang/String;)')
@@ -91,39 +78,39 @@ class STRING(Plugin):
                 test = {'className': classname, 'methodName': methodname, 'arguments': args, }
 
                 # [{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
-                id = hashlib.sha256(JSONEncoder().encode(test).encode('utf-8')).hexdigest()
-                test['id'] = id
+                ID = hashlib.sha256(JSONEncoder().encode(test).encode('utf-8')).hexdigest()
+                test['id'] = ID
 
                 # get return variable name
                 p3 = re.compile(self.MOVE_RESULT_OBJECT)
                 mro_statement = p3.search(line).group()
                 return_variable_name = mro_statement[mro_statement.rindex(' ') + 1:]
 
-                if id not in target_contexts.keys():
-                    target_contexts[id] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
+                if ID not in target_contexts.keys():
+                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
                 else:
-                    target_contexts[id].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
+                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
 
-                # print(test)
                 if test not in json_list:
                     json_list.append(test)
 
+
         self.optimizations(json_list, target_contexts)
-        
+
     def __process_2_argument(self):
         ESCAPE_STRING = '''"(.*?)"'''
         CONST_STRING = 'const-string [vp]\d+, ' + ESCAPE_STRING + '.*\s+'
         INVOKE_STATIC = 'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\))Ljava/lang/String;\s+'
 
         p = re.compile('\s+' + CONST_STRING + CONST_STRING + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
-        
+
         json_list = []
         target_contexts = {}
         for mtd in self.methods:
             for i in p.finditer(mtd.body):
                 test = {}
                 line = i.group()
-         
+
                 # get arguments
                 args = []
                 match_string = re.compile(CONST_STRING)
@@ -146,18 +133,18 @@ class STRING(Plugin):
                 test = {'className': classname, 'methodName': methodname, 'arguments': args, }
 
                 # [{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
-                id = hashlib.sha256(JSONEncoder().encode(test).encode('utf-8')).hexdigest()
-                test['id'] = id
+                ID = hashlib.sha256(JSONEncoder().encode(test).encode('utf-8')).hexdigest()
+                test['id'] = ID
 
                 # get return variable name
                 p3 = re.compile(self.MOVE_RESULT_OBJECT)
                 mro_statement = p3.search(line).group()
                 return_variable_name = mro_statement[mro_statement.rindex(' ') + 1:]
 
-                if id not in target_contexts.keys():
-                    target_contexts[id] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
+                if ID not in target_contexts.keys():
+                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
                 else:
-                    target_contexts[id].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
+                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
 
                 # print(test)
                 if test not in json_list:
@@ -180,9 +167,9 @@ class STRING(Plugin):
             ==>
 
             const-string v0, "------decode result-------"
-            
+
             ---------------------------------------------------------
-            
+
             const-string v29, "b3547fe0b848a8c73e30d89c473cd167"
 
             const-string v30, "07e942bf3a4751a9c188cf652d6dbe03"
@@ -208,14 +195,14 @@ class STRING(Plugin):
             move-result-object v3
 
 
-    
+
         '''
         ESCAPE_STRING = '''"(.*?)"'''
         CONST_STRING = 'const-string [vp]\d+, ' + ESCAPE_STRING + '.*\s+'
         INVOKE_STATIC = 'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\))Ljava/lang/String;\s+'
 
         p = re.compile('\s+' + CONST_STRING + CONST_STRING + CONST_STRING + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
-        
+
         # print("this is strings 3")
         # print('\s+' + CONST_STRING + '\s+' + CONST_STRING + '\s+'  + CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
         json_list = []
@@ -224,7 +211,7 @@ class STRING(Plugin):
             for i in p.finditer(mtd.body):
                 test = {}
                 line = i.group()
-         
+
                 # TODO 后续再考虑使用通用的方式获取参数
                 # get arguments
                 args = []
@@ -248,18 +235,18 @@ class STRING(Plugin):
                 test = {'className': classname, 'methodName': methodname, 'arguments': args, }
 
                 # [{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
-                id = hashlib.sha256(JSONEncoder().encode(test).encode('utf-8')).hexdigest()
-                test['id'] = id
+                ID = hashlib.sha256(JSONEncoder().encode(test).encode('utf-8')).hexdigest()
+                test['id'] = ID
 
                 # get return variable name
                 p3 = re.compile(self.MOVE_RESULT_OBJECT)
                 mro_statement = p3.search(line).group()
                 return_variable_name = mro_statement[mro_statement.rindex(' ') + 1:]
 
-                if id not in target_contexts.keys():
-                    target_contexts[id] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
+                if ID not in target_contexts.keys():
+                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
                 else:
-                    target_contexts[id].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
+                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
 
                 # print(test)
                 if test not in json_list:
