@@ -119,7 +119,6 @@ class INT(Plugin):
                 argnames.append(tmps[1][1:-1])
                 argnames.append(tmps[2][:-1])
                 argnames.append(tmps[3][:-2])
-                # print(argnames)
 
                 index = mtd.body.index(line)
                 arrs = mtd.body[:index].split('\n')
@@ -129,7 +128,6 @@ class INT(Plugin):
                 for name in argnames:
                     reg = 'const(?:\/\d+) %s, (-?0x[a-f\d]+)' % name
                     p2 = re.compile(reg)
-                    # print(reg)
                     for item in arrs:
                         match = p2.search(item)
                         if match:
@@ -139,18 +137,14 @@ class INT(Plugin):
                         elif name in item:
                             break
 
-                # print(args)
-
                 if len(args) < 3:
                     continue
 
                 end = tmps[4].index(';->')
                 classname = tmps[4][1:end].replace('/', '.')
-                # print(classname)
 
                 args_index = tmps[4].index('(III)')
                 methodname = tmps[4][end + 3:args_index]
-                # print(methodname)
 
                 target = {'className': classname, 'methodName': methodname, 'arguments': args, }
                 ID = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
@@ -165,8 +159,6 @@ class INT(Plugin):
 
                 if target not in json_list:
                     json_list.append(target)
-
-                # print(target)
 
         self.optimizations(json_list, target_contexts)
 
@@ -199,13 +191,13 @@ class INT(Plugin):
                     cn = j.group().split(", ")
                     args.append('I:' + str(eval(cn[1])))
 
-                p3 = re.compile(INVOKE_STATIC_III)
+                p3 = re.compile(INVOKE_STATIC_II)
                 cn_statement = p3.search(line).group()
                 start = cn_statement.index('}, L')
                 end = cn_statement.index(';->')
                 classname = cn_statement[start + 4:end].replace('/', '.')
 
-                args_index = cn_statement.index('(III)')
+                args_index = cn_statement.index('(II)')
                 methodname = cn_statement[end + 3:args_index]
 
                 target = {'className': classname, 'methodName': methodname, 'arguments': args, }
@@ -240,12 +232,9 @@ class INT(Plugin):
 
             const-string v0, "android.content.Intent"
         '''
+        INVOKE_STATIC_I = r'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(I\))Ljava/lang/String;\s+'
 
-        #print('__process_i')
-
-        INVOKE_STATIC_III = r'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(I\))Ljava/lang/String;\s+'
-
-        p = re.compile('\s+' + self.CONST_NUMBER + '\s+' + INVOKE_STATIC_III + self.MOVE_RESULT_OBJECT)
+        p = re.compile('\s+' + self.CONST_NUMBER + '\s+' + INVOKE_STATIC_I + self.MOVE_RESULT_OBJECT)
 
         json_list = []
         target_contexts = {}
@@ -260,9 +249,7 @@ class INT(Plugin):
                     cn = j.group().split(", ")
                     args.append('I:' + str(eval(cn[1])))
 
-                #print(args)
-
-                p3 = re.compile(INVOKE_STATIC_III)
+                p3 = re.compile(INVOKE_STATIC_I)
                 cn_statement = p3.search(line).group()
                 start = cn_statement.index('}, L')
                 end = cn_statement.index(';->')

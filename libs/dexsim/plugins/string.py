@@ -75,7 +75,7 @@ class STRING(Plugin):
                 args_index = line.index('(Ljava/lang/String;)')
                 methodname = line[end + 3:args_index]
 
-                test = {'className': classname, 'methodName': methodname, 'arguments': args, }
+                test = {'className': classname, 'methodName': methodname, 'arguments': args}
 
                 # [{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
                 ID = hashlib.sha256(JSONEncoder().encode(test).encode('utf-8')).hexdigest()
@@ -93,7 +93,6 @@ class STRING(Plugin):
 
                 if test not in json_list:
                     json_list.append(test)
-
 
         self.optimizations(json_list, target_contexts)
 
@@ -192,8 +191,6 @@ class STRING(Plugin):
             .catch Ljava/lang/Exception; {:try_start_60 .. :try_end_69} :catch_59
 
             move-result-object v3
-
-
 
         '''
         ESCAPE_STRING = '''"(.*?)"'''
