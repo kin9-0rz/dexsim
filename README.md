@@ -1,6 +1,6 @@
 # dexsim
 
-A python3 veresion for [dex-oracle](https://github.com/CalebFenton/dex-oracle).
+A python3 version for [dex-oracle](https://github.com/CalebFenton/dex-oracle).
 You can read more details on [dex-oracle](https://github.com/CalebFenton/dex-oracle).
 
 ### Install
@@ -9,7 +9,7 @@ You can read more details on [dex-oracle](https://github.com/CalebFenton/dex-ora
 2. adb
 3. pip install -r requirements.txt
 
-Note: Please make sure you cmd can run baksmali/smali, adb, java.
+Note: Please make sure your cmd can run baksmali/smali, adb, java.
 
 ### Usage
 
