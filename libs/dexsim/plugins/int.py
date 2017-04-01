@@ -68,17 +68,17 @@ class INT(Plugin):
                 target = {'className': classname, 'methodName': methodname, 'arguments': args, }
 
                 # 转换为[{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
-                id = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
-                target['id'] = id
+                ID = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
+                target['id'] = ID
 
                 p3 = re.compile(self.MOVE_RESULT_OBJECT)
                 mro_statement = p3.search(line).group()
                 return_variable_name = mro_statement[mro_statement.rindex(' ') + 1:]
 
-                if id not in target_contexts.keys():
-                    target_contexts[id] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
+                if ID not in target_contexts.keys():
+                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
                 else:
-                    target_contexts[id].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
+                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
 
                 if target not in json_list:
                     json_list.append(target)
@@ -153,15 +153,15 @@ class INT(Plugin):
                 # print(methodname)
 
                 target = {'className': classname, 'methodName': methodname, 'arguments': args, }
-                id = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
-                target['id'] = id
+                ID = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
+                target['id'] = ID
 
                 return_variable_name = tmps[-1]
 
-                if id not in target_contexts.keys():
-                    target_contexts[id] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
+                if ID not in target_contexts.keys():
+                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
                 else:
-                    target_contexts[id].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
+                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
 
                 if target not in json_list:
                     json_list.append(target)
@@ -211,17 +211,17 @@ class INT(Plugin):
                 target = {'className': classname, 'methodName': methodname, 'arguments': args, }
 
                 # 转换为[{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
-                id = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
-                target['id'] = id
+                ID = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
+                target['id'] = ID
 
                 p3 = re.compile(self.MOVE_RESULT_OBJECT)
                 mro_statement = p3.search(line).group()
                 return_variable_name = mro_statement[mro_statement.rindex(' ') + 1:]
 
-                if id not in target_contexts.keys():
-                    target_contexts[id] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
+                if ID not in target_contexts.keys():
+                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
                 else:
-                    target_contexts[id].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
+                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
 
                 if target not in json_list:
                     json_list.append(target)
@@ -274,17 +274,17 @@ class INT(Plugin):
                 target = {'className': classname, 'methodName': methodname, 'arguments': args, }
 
                 # 转换为[{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
-                id = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
-                target['id'] = id
+                ID = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
+                target['id'] = ID
 
                 p3 = re.compile(self.MOVE_RESULT_OBJECT)
                 mro_statement = p3.search(line).group()
                 return_variable_name = mro_statement[mro_statement.rindex(' ') + 1:]
 
-                if id not in target_contexts.keys():
-                    target_contexts[id] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
+                if ID not in target_contexts.keys():
+                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
                 else:
-                    target_contexts[id].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
+                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
 
                 if target not in json_list:
                     json_list.append(target)
