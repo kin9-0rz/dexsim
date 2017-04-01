@@ -146,7 +146,6 @@ class STRING(Plugin):
                 else:
                     target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
 
-                # print(test)
                 if test not in json_list:
                     json_list.append(test)
 
@@ -203,8 +202,6 @@ class STRING(Plugin):
 
         p = re.compile('\s+' + CONST_STRING + CONST_STRING + CONST_STRING + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
 
-        # print("this is strings 3")
-        # print('\s+' + CONST_STRING + '\s+' + CONST_STRING + '\s+'  + CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
         json_list = []
         target_contexts = {}
         for mtd in self.methods:
@@ -248,7 +245,6 @@ class STRING(Plugin):
                 else:
                     target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
 
-                # print(test)
                 if test not in json_list:
                     json_list.append(test)
 

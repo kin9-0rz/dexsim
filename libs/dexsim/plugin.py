@@ -60,7 +60,6 @@ class Plugin(object):
         for key in outputs:
             if 'success' in outputs[key]:
                 if key not in target_contexts.keys():
-                    print(key, outputs)
                     continue
                 for item in target_contexts[key]:
                     old_body = item[0].body
