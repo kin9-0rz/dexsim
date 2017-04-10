@@ -55,9 +55,9 @@ class Plugin(object):
             fp.write(jsons)
         outputs = self.driver.decode(fp.name)
         os.unlink(fp.name)
-        
+
         # 替换内存
-        # outpus 存放的是解密后的结果。
+        # output 存放的是解密后的结果。
         for key in outputs:
             if 'success' in outputs[key]:
                 if key not in target_contexts.keys():

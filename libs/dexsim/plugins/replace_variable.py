@@ -108,10 +108,21 @@ class ReplaceVariable(Plugin):
             for mtd in self.methods:
                 for i in p2.finditer(mtd.body):
                     line = i.group()
+                    opcode_name = fields[key][0]
+                    register = line.split()[1]
+                    value = fields[key][1]
+                    idx = opcode_name.index('/')
 
-                    new_context = fields[key][0] + ' ' + line.split()[1] + ' ' + fields[key][1]
+                    # smali const/4 vn, 0x1111，寄存器的范围只能是0~15.
+                    # 所以，如果n大于15的时候，则需要调整为const/16。
+                    wide = int(opcode_name[idx+1:])
+                    if int(register[1:-1]) > 15 and wide == 4:
+                        opcode_name = opcode_name[:idx+1] + '16'
+
+                    new_context = opcode_name + ' ' + register + ' ' + value
                     old_context = line
                     mtd.body = mtd.body.replace(old_context, new_context)
+
                     mtd.modified = True
                     self.make_changes = True
 
@@ -143,7 +154,6 @@ class ReplaceVariable(Plugin):
                 new_value = '"' + tmp[1] + tmp[3] + '"'
                 index = old_context.rindex('\n\n    const-string ')
                 new_context = old_context[index:].replace(old_value, new_value)
-
                 mtd.body = mtd.body.replace(old_context, new_context)
                 mtd.modified = True
                 self.make_changes = True
