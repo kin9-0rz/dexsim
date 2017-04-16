@@ -45,7 +45,7 @@ class Plugin(object):
             更新内存
             写入文件
         '''
-
+        
         if not json_list or not target_contexts:
             return
 
@@ -67,6 +67,7 @@ class Plugin(object):
                     old_body = item[0].body
                     target_context = item[1]
                     new_context = item[2] + outputs[key][1]
+                    print('found sth:\t%s'%outputs[key][1])
                     # It's not a string.
                     if 'null' == outputs[key][1]:
                         continue

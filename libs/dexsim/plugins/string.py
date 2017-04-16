@@ -99,7 +99,7 @@ class STRING(Plugin):
     def __process_2_argument(self):
         ESCAPE_STRING = '''"(.*?)"'''
         CONST_STRING = 'const-string [vp]\d+, ' + ESCAPE_STRING + '.*\s+'
-        INVOKE_STATIC = 'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\))Ljava/lang/String;\s+'
+        INVOKE_STATIC = 'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(Ljava/lang/String;Ljava/lang/String;\))Ljava/lang/String;\s+'
 
         p = re.compile('\s+' + CONST_STRING + CONST_STRING + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
 
