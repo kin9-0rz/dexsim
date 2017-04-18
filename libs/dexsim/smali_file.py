@@ -99,7 +99,7 @@ class SmaliField:
         self.name, self.type = field_signature.split(':')
 
     def to_str(self):
-        return descriptor
+        return self.descriptor
 
 
 class SmaliMethod:
