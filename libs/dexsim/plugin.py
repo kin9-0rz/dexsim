@@ -69,8 +69,9 @@ class Plugin(object):
                     old_body = item[0].body
                     target_context = item[1]
                     new_context = item[2] + outputs[key][1]
-                    if 'null' == outputs[key][1]:
+
                     # It's not a string.
+                    if 'null' == outputs[key][1]:
                         continue
                     item[0].body = old_body.replace(target_context, new_context)
                     item[0].modified = True
