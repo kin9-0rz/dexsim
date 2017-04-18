@@ -23,7 +23,7 @@ class INT(Plugin):
         print('run Plugin: %s' % self.name, end=' -> ')
         self.__process_iii()
         self.__process_iii_plus()
-        self.__process_i()
+        self.__process_ii()
         self.__process_i()
 
     def __process_iii(self):
