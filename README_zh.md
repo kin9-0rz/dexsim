@@ -23,7 +23,12 @@
 - [x] func(I)Ljava/lang/String;
 - [x] func(II)Ljava/lang/String;
 - [x] func(III)Ljava/lang/String;
-- [x] fun(Ljava/lang/String;)[B ---> Ljava/lang/String;-><init>([B)V
+- [x] func([B)Ljava/lang/String;
+- [x] Replace Variable : I
+- [x] Replace Variable : Ljava/lang/String;
+- [ ] Replace Variable : [B
+- [ ] fun(Ljava/lang/String;)[B
+
 
 ### 解密插件
 

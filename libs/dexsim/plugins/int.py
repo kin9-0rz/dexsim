@@ -13,7 +13,7 @@ __all__ = ["INT"]
 class INT(Plugin):
 
     name = "INT"
-    version = '0.0.2'
+    version = '0.0.3'
     description = '解密参数是INT类型'
 
     def __init__(self, driver, methods, smali_files):
@@ -21,72 +21,51 @@ class INT(Plugin):
 
     def run(self):
         print('run Plugin: %s' % self.name, end=' -> ')
-        self.__process_iii()
-        self.__process_iii_plus()
+        self.__process_iii_1()
+        self.__process_iii_2()
         self.__process_ii()
         self.__process_i()
 
-    def __process_iii(self):
+    def __process_iii_1(self):
         '''
             const/16 v0, 0x21
             const/16 v2, -0x9
             const/4 v3, -0x1
-            invoke-static {v0, v2, v3}, Lcom/android/system/admin/Br;->oIClIOIC(III)Ljava/lang/String;
+            invoke-static {v0, v2, v3}, La/b/c;->func(III)Ljava/lang/String;
             move-result-object v0
 
             ==>
 
-            const-string v0, "android.content.Intent"
+            const-string v0, "decode string"
         '''
+        invoke_ptn = self.get_invoke_pattern('III')
+        target_ptn = '\s+' + (self.CONST_NUMBER + '\s+') * 3 + invoke_ptn + self.MOVE_RESULT_OBJECT
 
-        INVOKE_STATIC_III = 'invoke-static \{[vp]\d+, [vp]\d+, [vp]\d+\}, L([^;]+);->([^\(]+\(III\))Ljava/lang/String;\s+'
+        prog = re.compile(target_ptn)
 
-        p = re.compile('\s+' + (self.CONST_NUMBER + '\s+') * 3 + INVOKE_STATIC_III + self.MOVE_RESULT_OBJECT)
+        self.json_list = []
+        self.target_contexts = {}
 
-        json_list = []
-        target_contexts = {}
         for mtd in self.methods:
-            for i in p.finditer(mtd.body):
-                target = {}
+            for i in prog.finditer(mtd.body):
                 line = i.group()
 
-                p2 = re.compile(self.CONST_NUMBER)
-                args = []
-                for j in p2.finditer(line):
-                    cn = j.group().split(", ")
-                    args.append('I:' + str(eval(cn[1])))
+                cls_name, mtd_name, rtn_name = self.get_clz_mtd_rtn_name(line)
+                args = self.get_arguments(None, line, 'I')
+                if len(args) != 3:
+                    continue
 
-                p3 = re.compile(INVOKE_STATIC_III)
-                cn_statement = p3.search(line).group()
-                start = cn_statement.index('}, L')
-                end = cn_statement.index(';->')
-                classname = cn_statement[start + 4:end].replace('/', '.')
+                json_item = self.get_json_item(cls_name, mtd_name, args)
 
-                args_index = cn_statement.index('(III)')
-                methodname = cn_statement[end + 3:args_index]
+                self.append_json_item(json_item, mtd, line, rtn_name)
 
-                target = {'className': classname, 'methodName': methodname, 'arguments': args, }
 
-                # 转换为[{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
-                ID = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
-                target['id'] = ID
+        self.optimize()
 
-                p3 = re.compile(self.MOVE_RESULT_OBJECT)
-                mro_statement = p3.search(line).group()
-                return_variable_name = mro_statement[mro_statement.rindex(' ') + 1:]
-
-                if ID not in target_contexts.keys():
-                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
-                else:
-                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
-
-                if target not in json_list:
-                    json_list.append(target)
-
-        self.optimizations(json_list, target_contexts)
-
-    def __process_iii_plus(self):
+    def __process_iii_2(self):
         '''
+            有时候，参数定义的时候，顺序不一致，或者之间存在其他干扰。
+
             const/16 v0, 0x21
             ...
             const/16 v2, -0x9
@@ -94,22 +73,21 @@ class INT(Plugin):
             ...
             const/4 v3, -0x1
 
-            invoke-static {v0, v2, v3}, Lcom/android/system/admin/Br;->oIClIOIC(III)Ljava/lang/String;
+            invoke-static {v0, v2, v3}, La/b/c;->func(III)Ljava/lang/String;
             move-result-object v0
 
             ==>
 
-            const-string v0, "android.content.Intent"
+            const-string v0, "Decode String"
         '''
+        invoke_ptn = self.get_invoke_pattern('III')
+        prog = re.compile(invoke_ptn + self.MOVE_RESULT_OBJECT)
 
-        INVOKE_STATIC_III = 'invoke-static \{[vp]\d+, [vp]\d+, [vp]\d+\}, L([^;]+);->([^\(]+\(III\))Ljava/lang/String;\s+'
+        self.json_list = []
+        self.target_contexts = {}
 
-        p = re.compile(INVOKE_STATIC_III + self.MOVE_RESULT_OBJECT)
-
-        json_list = []
-        target_contexts = {}
         for mtd in self.methods:
-            for i in p.finditer(mtd.body):
+            for i in prog.finditer(mtd.body):
                 target = {}
                 line = i.group()
 
@@ -140,85 +118,46 @@ class INT(Plugin):
                 if len(args) < 3:
                     continue
 
-                end = tmps[4].index(';->')
-                classname = tmps[4][1:end].replace('/', '.')
+                cls_name, mtd_name, rtn_name = self.get_clz_mtd_rtn_name(line)
 
-                args_index = tmps[4].index('(III)')
-                methodname = tmps[4][end + 3:args_index]
+                json_item = self.get_json_item(cls_name, mtd_name, args)
 
-                target = {'className': classname, 'methodName': methodname, 'arguments': args, }
-                ID = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
-                target['id'] = ID
+                self.append_json_item(json_item, mtd, line, rtn_name)
 
-                return_variable_name = tmps[-1]
-
-                if ID not in target_contexts.keys():
-                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
-                else:
-                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
-
-                if target not in json_list:
-                    json_list.append(target)
-
-        self.optimizations(json_list, target_contexts)
+        self.optimize()
 
     def __process_ii(self):
         '''
             const/16 v2, -0x9
             const/4 v3, -0x1
-            invoke-static {v0, .. v3}, Lcom/android/system/admin/Br;->oIClIOIC(II)Ljava/lang/String;
+            invoke-static {v2, .. v3}, La/b/c;->func(II)Ljava/lang/String;
             move-result-object v0
 
             ==>
 
-            const-string v0, "android.content.Intent"
+            const-string v0, "Decode String"
         '''
 
-        INVOKE_STATIC_II = r'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(II\))Ljava/lang/String;\s+'
+        INVOKE_STATIC_II = self.get_invoke_pattern('II')
+        prog = re.compile('\s+' + self.CONST_NUMBER * 2 + INVOKE_STATIC_II + self.MOVE_RESULT_OBJECT)
 
-        p = re.compile('\s+' + (self.CONST_NUMBER + '\s+') * 2 + INVOKE_STATIC_II + self.MOVE_RESULT_OBJECT)
+        self.json_list = []
+        self.target_contexts = {}
 
-        json_list = []
-        target_contexts = {}
         for mtd in self.methods:
-            for i in p.finditer(mtd.body):
-                target = {}
+            for i in prog.finditer(mtd.body):
                 line = i.group()
 
-                p2 = re.compile(self.CONST_NUMBER)
-                args = []
-                for j in p2.finditer(line):
-                    cn = j.group().split(", ")
-                    args.append('I:' + str(eval(cn[1])))
+                args = self.get_arguments(None, line, 'I')
+                if len(args) != 2:
+                    continue
 
-                p3 = re.compile(INVOKE_STATIC_II)
-                cn_statement = p3.search(line).group()
-                start = cn_statement.index('}, L')
-                end = cn_statement.index(';->')
-                classname = cn_statement[start + 4:end].replace('/', '.')
+                cls_name, mtd_name, rtn_name = self.get_clz_mtd_rtn_name(line)
 
-                args_index = cn_statement.index('(II)')
-                methodname = cn_statement[end + 3:args_index]
+                json_item = self.get_json_item(cls_name, mtd_name, args)
+                self.append_json_item(json_item, mtd, line, rtn_name)
 
-                target = {'className': classname, 'methodName': methodname, 'arguments': args, }
-
-                # 转换为[{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
-                ID = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
-                target['id'] = ID
-
-                p3 = re.compile(self.MOVE_RESULT_OBJECT)
-                mro_statement = p3.search(line).group()
-                return_variable_name = mro_statement[mro_statement.rindex(' ') + 1:]
-
-                if ID not in target_contexts.keys():
-                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
-                else:
-                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
-
-                if target not in json_list:
-                    json_list.append(target)
-
-        self.optimizations(json_list, target_contexts)
+        self.optimize()
 
     def __process_i(self):
         '''
@@ -232,48 +171,21 @@ class INT(Plugin):
 
             const-string v0, "android.content.Intent"
         '''
-        INVOKE_STATIC_I = r'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+L([^;]+);->([^\(]+\(I\))Ljava/lang/String;\s+'
-
-        p = re.compile('\s+' + self.CONST_NUMBER + '\s+' + INVOKE_STATIC_I + self.MOVE_RESULT_OBJECT)
+        INVOKE_STATIC_I = self.get_invoke_pattern('I')
+        prog = re.compile('\s+' + self.CONST_NUMBER + INVOKE_STATIC_I + self.MOVE_RESULT_OBJECT)
 
         json_list = []
         target_contexts = {}
         for mtd in self.methods:
-            for i in p.finditer(mtd.body):
-                target = {}
+            for i in prog.finditer(mtd.body):
                 line = i.group()
 
-                p2 = re.compile(self.CONST_NUMBER)
-                args = []
-                for j in p2.finditer(line):
-                    cn = j.group().split(", ")
-                    args.append('I:' + str(eval(cn[1])))
+                args = self.get_arguments(None, line, 'I')
+                if not args:
+                    continue
 
-                p3 = re.compile(INVOKE_STATIC_I)
-                cn_statement = p3.search(line).group()
-                start = cn_statement.index('}, L')
-                end = cn_statement.index(';->')
-                classname = cn_statement[start + 4:end].replace('/', '.')
+                cls_name, mtd_name, rtn_name = self.get_clz_mtd_rtn_name(line)
+                json_item = self.get_json_item(cls_name, mtd_name, args)
+                self.append_json_item(json_item, mtd, line, rtn_name)
 
-                args_index = cn_statement.index('(I)')
-                methodname = cn_statement[end + 3:args_index]
-
-                target = {'className': classname, 'methodName': methodname, 'arguments': args, }
-
-                # 转换为[{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
-                ID = hashlib.sha256(JSONEncoder().encode(target).encode('utf-8')).hexdigest()
-                target['id'] = ID
-
-                p3 = re.compile(self.MOVE_RESULT_OBJECT)
-                mro_statement = p3.search(line).group()
-                return_variable_name = mro_statement[mro_statement.rindex(' ') + 1:]
-
-                if ID not in target_contexts.keys():
-                    target_contexts[ID] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
-                else:
-                    target_contexts[ID].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
-
-                if target not in json_list:
-                    json_list.append(target)
-
-        self.optimizations(json_list, target_contexts)
+        self.optimize()
