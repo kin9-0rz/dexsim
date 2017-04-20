@@ -12,6 +12,8 @@
 from json import JSONEncoder
 import tempfile
 import os
+import hashlib
+import re
 
 
 class Plugin(object):
@@ -19,11 +21,119 @@ class Plugin(object):
     description = ''
     version = ''
 
-    CONST_NUMBER = 'const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)'
+    # const/16 v2, 0x1a
+    CONST_NUMBER = 'const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s+'
     # ESCAPE_STRING = '''"(.*?)(?<!\\\\)"'''
     ESCAPE_STRING = '''"(.*?)"'''
+    # const-string v3, "encode string"
     CONST_STRING = 'const-string [vp]\d+, ' + ESCAPE_STRING + '.*'
+    # move-result-object v0
     MOVE_RESULT_OBJECT = 'move-result-object ([vp]\d+)'
+    # new-array v1, v1, [B
+    NEW_BYTE_ARRAY = 'new-array [vp]\d+, [vp]\d+, \[B\s+'
+    # fill-array-data v1, :array_4e
+    FILL_ARRAY_DATA = 'fill-array-data [vp]\d+, :array_[\w\d]+\s+'
+
+    # 保存需要解密的类名、方法、参数 [{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
+    json_list = []
+    # 目标上下文，解密后用于替换
+    target_contexts = {}
+
+
+    def get_invoke_pattern(self, args):
+        '''
+            根据参数，生成对应invoke-static语句的正则表达式(RE)
+        '''
+        return r'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(%s\))Ljava/lang/String;\s+' % args
+
+    def get_class_name(self, line):
+        start = line.index('}, L')
+        end = line.index(';->')
+        return line[start + 4:end].replace('/', '.')
+
+    def get_method_name(self, line):
+        end = line.index(';->')
+        args_index = line.index('(')
+        return line[end + 3:args_index]
+
+    def get_clz_mtd_name(self, line):
+        clz_name, mtd_name = re.search('invoke-static.*?{.*?}, (.*?);->(.*?)\(.*?\)Ljava/lang/String;', line).groups()
+        clz_name = clz_name[1:].replace('/', '.')
+        return (clz_name, mtd_name)
+
+    def get_clz_mtd_rtn_name(self, line):
+        '''
+            class_name, method_name, return_variable_name
+        '''
+        clz_name, mtd_name = re.search('invoke-static.*?{.*?}, (.*?);->(.*?)\(.*?\)Ljava/lang/String;', line).groups()
+        clz_name = clz_name[1:].replace('/', '.')
+
+        prog = re.compile(self.MOVE_RESULT_OBJECT)
+        mro_statement = prog.search(line).group()
+        rtn_name = mro_statement[mro_statement.rindex(' ') + 1:]
+        return (clz_name, mtd_name, rtn_name)
+
+    def get_arguments(self, mtd_body, line, proto):
+        '''
+            获取参数
+        '''
+        args = []
+        if proto == '[B':
+            ptn1 = re.compile(':array_[\w\d]+')
+            array_data_name = ptn1.search(line).group()
+
+            reg = '\s+' + array_data_name + '\s+.array-data 1\s+' + '((0x[\da-f]{2}t)\s+)+' + '.end array-data'
+            ptn2 = re.compile('\s+' + array_data_name + '\s+.array-data 1\s+' + '[\w\s]+' + '.end array-data')
+
+            result = ptn2.search(mtd_body)
+            if result:
+                array_data_context = result.group()
+                byte_arr = []
+                for item in array_data_context.split()[3:-2]:
+                    byte_arr.append(eval(item[:-1]))
+                args.append(proto + ':' + str(byte_arr))
+        elif proto == 'java.lang.String':
+            const_str = re.findall("\".+", line)[-1]
+            arg1 = []
+            for item in const_str[1:-1].encode("UTF-8"):
+                arg1.append(item)
+            args.append("java.lang.String:" + str(arg1))
+        elif proto in ['I', 'II', 'III']:
+            prog2 = re.compile(self.CONST_NUMBER)
+            args = []
+            for item in prog2.finditer(line):
+                cn = item.group().split(", ")
+                args.append('I:' + str(eval(cn[1].strip())))
+        return args
+
+    def get_return_variable_name(self, line):
+        p3 = re.compile(self.MOVE_RESULT_OBJECT)
+        mro_statement = p3.search(line).group()
+        return mro_statement[mro_statement.rindex(' ') + 1:]
+
+    def get_json_item(self, cls_name, mtd_name, args):
+        '''
+            生产解密目标
+        '''
+        item = {'className': cls_name, 'methodName': mtd_name, 'arguments': args}
+        ID = hashlib.sha256(JSONEncoder().encode(item).encode('utf-8')).hexdigest()
+        item['id'] = ID
+        return item
+
+
+    def append_json_item(self, json_item, mtd, line, return_variable_name):
+        '''
+            添加到json_list, target_contexts
+        '''
+        mid = json_item['id']
+        if mid not in self.target_contexts.keys():
+            self.target_contexts[mid] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
+        else:
+            self.target_contexts[mid].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
+
+        if json_item not in self.json_list:
+            self.json_list.append(json_item)
+
 
     def __init__(self, driver, methods, smali_files):
         self.make_changes = False
@@ -37,6 +147,45 @@ class Plugin(object):
         '''
         pass
 
+    def optimize(self):
+        '''
+            重复的代码，考虑去除
+            生成json
+            生成驱动解密
+            更新内存
+            写入文件
+        '''
+        if not self.json_list or not self.target_contexts:
+            return
+
+        jsons = JSONEncoder().encode(self.json_list)
+
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as fp:
+            fp.write(jsons)
+        outputs = self.driver.decode(fp.name)
+        os.unlink(fp.name)
+
+        # 替换内存
+        # output 存放的是解密后的结果。
+        for key in outputs:
+            if 'success' in outputs[key]:
+                if key not in self.target_contexts.keys():
+                    print('not found', key)
+                    continue
+                for item in self.target_contexts[key]:
+                    old_body = item[0].body
+                    target_context = item[1]
+                    new_context = item[2] + outputs[key][1]
+
+                    # It's not a string.
+                    if 'null' == outputs[key][1]:
+                        continue
+                    item[0].body = old_body.replace(target_context, new_context)
+                    item[0].modified = True
+                    self.make_changes = True
+
+        self.smali_files_update()
+
     def optimizations(self, json_list, target_contexts):
         '''
             重复的代码，考虑去除
@@ -45,7 +194,6 @@ class Plugin(object):
             更新内存
             写入文件
         '''
-
         if not json_list or not target_contexts:
             return
 
@@ -56,7 +204,7 @@ class Plugin(object):
         outputs = self.driver.decode(fp.name)
         os.unlink(fp.name)
 
-        print(outputs)
+        # print(outputs)
 
         # 替换内存
         # output 存放的是解密后的结果。
