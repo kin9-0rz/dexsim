@@ -349,15 +349,15 @@ class Plugin(object):
         if self.make_changes:
             for smali_file in self.smali_files:
                 smali_file.update()
-                
+
 def main():
     obj = Plugin(None, None, None)
     line = '[I[B[Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;'
     print(obj.decode_params_type(line))
 
     lines = '''
-    const-string v0, "4db8c06f8baa2fa97518e2fbc78aed7a"
-                    const-string v1, "dcc6ee73b95b7008865a1241a3f9f2d4"
+    const-string v1, "4db8c06f8baa2fa97518e2fbc78aed7a"
+                    const-string v0, "dcc6ee73b95b7008865a1241a3f9f2d4"
                     const-string v2, "89cf037654ae21bd"
                     invoke-static {v0, v1, v2}, Lnpnojrqk/niwjucst/oifhebjg/uihmjzfs/agntdkrh/xumvnbpc/jqwutfvs/dfkxcwot/hcsplder;->alxrefmv(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 
