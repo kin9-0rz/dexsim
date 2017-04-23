@@ -33,6 +33,8 @@ class Plugin(object):
     NEW_BYTE_ARRAY = 'new-array [vp]\d+, [vp]\d+, \[B\s+'
     # fill-array-data v1, :array_4e
     FILL_ARRAY_DATA = 'fill-array-data [vp]\d+, :array_[\w\d]+\s+'
+    #
+    INVOKE_STATIC_NORMAL = 'invoke-static.*?{(?P<params>.*?)}, (?P<clsname>.*?);->(?P<mtdname>.*?)\((?P<paramsType>.*?)\)Ljava/lang/String;'
 
     # 保存需要解密的类名、方法、参数 [{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
     json_list = []
@@ -72,6 +74,159 @@ class Plugin(object):
         mro_statement = prog.search(line).group()
         rtn_name = mro_statement[mro_statement.rindex(' ') + 1:]
         return (clz_name, mtd_name, rtn_name)
+
+    def get_func_info(self, line):
+        '''
+        :param line:  contains the invoke-static method
+
+        :return:
+        '''
+        prog = re.compile(self.INVOKE_STATIC_NORMAL)
+        m = prog.search(line)
+
+        ret = {'params':'', 'clsname':'', 'mtdname':'', 'paramsType':''}
+        try:
+            return(m.groupdict())
+        except:
+            return(ret)
+
+    def decode_params_type(self, paramsType):
+        '''
+        decode and return params type from string
+
+        :param paramsType:  like 'I[B[Ljava/lang/String;Ljava/lang/String;'
+        :return:        should return ['I', '[B', '[java/lang/String', 'java/lang/String']
+        '''
+        #deal with obj first
+        ret =[item for item in re.split('L|;', paramsType.replace('/', '.')) if item]
+
+        #deal with [, array type
+        all_types = []
+        ary_flag = False
+        for part in ret:
+            if ary_flag:
+                all_types.append('[' + part)
+                ary_flag = False
+                continue
+
+            if '[' not in part:
+                all_types.append(part)
+                continue
+
+            for char in part:
+                if '[' == char:
+                    ary_flag = True
+                    continue
+
+                if ary_flag:
+                    char = '[' + char
+                    ary_flag = False
+                all_types.append(char)
+
+        return(all_types)
+
+    def isValidLine(self, line, param, d_param_type):
+        '''
+        check whether valid, by compare opcode with paramtype
+        e.g.  if paramtype is java.lang.string, then line should be like const-string v0, "xx"  etc.
+              if paramtype is I,   then line should be like const  v0, 0xAB
+
+        :param line:    the line to be checked
+        :param param:  like v0
+        :param d_param_type: like {v0:java.lang.String'}
+
+        :return:
+        '''
+        type = d_param_type.get(param, '')
+        if not type:
+            return False
+
+        d_type_keywords = {
+            'java.lang.String' : 'const-string',   #what about other keywords
+            #'I' : '0x',
+            #'B' : '0x',
+            #'J' : '0x',
+            #other cases will all treate "," as keywords, that is will always valid
+        }
+
+        keywords = d_type_keywords.get(type, 'WILL_NEVER_EXISTS')
+        if keywords not in line:
+            return  False
+        return True
+
+    def get_params(self, block, ori_params, paramsType):
+        '''
+        build a common solution for different params
+
+        :param block: the matched block for your target,
+                like
+                case1:
+                    const-string v3, "encode string"
+                    invoke-static {v3}, La/b/c;->decryptData2(Ljava/lang/String;)Ljava/lang/String;
+
+                case2:
+                    const-string v0, "4db8c06f8baa2fa97518e2fbc78aed7a"
+                    const-string v1, "dcc6ee73b95b7008865a1241a3f9f2d4"
+                    const-string v2, "89cf037654ae21bd"
+                    invoke-static {v0, v1, v2}, Lnpnojrqk/niwjucst/oifhebjg/uihmjzfs/agntdkrh/xumvnbpc/jqwutfvs/dfkxcwot/hcsplder;->alxrefmv(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+
+        :param ori_params:    v3 for case1
+                           v0, v1, v2 for case2
+
+        :param paramsType:   like Ljava/lang/String; for case1
+                                Ljava/lang/String;Ljava/lang/String;Ljava/lang/String; for case2
+
+        :return:
+        '''
+        try:
+            #block had betten contains no move-result
+            lines_reverse = re.search('(.*)invoke-static', block, re.DOTALL).group().split('\n')[::-1]
+        except:
+            return([])
+
+        #construct default {param:value}
+        params = []
+        for item in ori_params.split(','):
+            params.append(item.strip())
+        d_param_value = dict((param, '') for param in params)
+
+        #construct {param:type}
+        paramsType = self.decode_params_type(paramsType)
+        d_param_type = {}
+        try:
+            d_param_type = dict((params[i], paramsType[i]) for i in range(len(params)))
+        except:
+            #v4, v5 as J
+            return([])
+
+        #construct {param:value}
+        for line in lines_reverse:
+            line = line.strip()
+            if all(d_param_value.values()):
+                break
+            parts = [item.strip() for item in re.split('\s+|,', line, 2) if item]
+            for param, value in d_param_value.items():
+                if all(d_param_value.values()):
+                    break
+                if value:
+                    continue
+
+                if param in parts and self.isValidLine(line, param, d_param_type):
+                    d_param_value[param] = parts[parts.index(param) + 1][1:-1]
+
+        cnt = len(d_param_value)
+        if cnt != len(paramsType):
+            return([])
+
+        ret = []
+        i = 0
+        for param in params:
+            if d_param_value[param]:
+                ret.append('%s:%s'%(paramsType[i], str(d_param_value[param])))
+            else:
+                return([])
+            i += 1
+        return(ret)
 
     def get_arguments(self, mtd_body, line, proto):
         '''
@@ -180,6 +335,7 @@ class Plugin(object):
                     # It's not a string.
                     if 'null' == outputs[key][1]:
                         continue
+                    print('found sth: ', outputs[key][1])
                     item[0].body = old_body.replace(target_context, new_context)
                     item[0].modified = True
                     self.make_changes = True
@@ -221,6 +377,7 @@ class Plugin(object):
                     # It's not a string.
                     if 'null' == outputs[key][1]:
                         continue
+                    print('found sth:', outputs[key][1])
                     item[0].body = old_body.replace(target_context, new_context)
                     item[0].modified = True
                     self.make_changes = True
@@ -234,3 +391,21 @@ class Plugin(object):
         if self.make_changes:
             for smali_file in self.smali_files:
                 smali_file.update()
+
+def main():
+    obj = Plugin(None, None, None)
+    line = '[I[B[Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;'
+    print(obj.decode_params_type(line))
+
+    lines = '''
+    const-string v0, "4db8c06f8baa2fa97518e2fbc78aed7a"
+                    const-string v1, "dcc6ee73b95b7008865a1241a3f9f2d4"
+                    const-string v2, "89cf037654ae21bd"
+                    invoke-static {v0, v1, v2}, Lnpnojrqk/niwjucst/oifhebjg/uihmjzfs/agntdkrh/xumvnbpc/jqwutfvs/dfkxcwot/hcsplder;->alxrefmv(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+
+    '''
+    funcInfo = obj.get_func_info('invoke-static {v0, v1, v2}, Lnpnojrqk/niwjucst/oifhebjg/uihmjzfs/agntdkrh/xumvnbpc/jqwutfvs/dfkxcwot/hcsplder;->alxrefmv(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;')
+    obj.get_params(lines, funcInfo['params'], funcInfo['paramsType'])
+
+if __name__ == "__main__":
+    main()

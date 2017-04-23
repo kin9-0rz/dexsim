@@ -20,12 +20,38 @@ class STRING(Plugin):
 
     def run(self):
         print('run Plugin: %s' % self.name, end=' -> ')
-        self.__process_3_argument()
-        self.__process_2_argument()
-        self.__process_1_argument()
+        # self.__process_3_argument()
+        # self.__process_2_argument()
+        # self.__process_1_argument()
+        self._process()
+
+    def _process(self):
+        #const-string
+        #invoke-static
+        #move-result are the basically needed
+        p = re.compile('const-string.*?' + self.INVOKE_STATIC_NORMAL + '\s+' + self.MOVE_RESULT_OBJECT, re.DOTALL)
+
+        self.json_list = []
+        self.target_contexts = {}
+        for mtd in self.methods:
+            for i in p.finditer(mtd.body):
+                block = i.group()
+
+                #args = self.get_arguments(None, line, 'java.lang.String')
+                funcInfo = self.get_func_info(block)
+                if not funcInfo['params']:
+                    continue
+                args = self.get_params(block, funcInfo['params'], funcInfo['paramsType'])
+                if not args:
+                    continue
+
+                cls_name, mtd_name, rtn_name = self.get_clz_mtd_rtn_name(block)
+
+                json_item = self.get_json_item(cls_name, mtd_name, args)
+                self.append_json_item(json_item, mtd, block, rtn_name)
+        self.optimize()
 
     def __process_1_argument(self):
-
         '''
             const-string v3, "encode string"
 
@@ -54,7 +80,10 @@ class STRING(Plugin):
             for i in p.finditer(mtd.body):
                 line = i.group()
 
-                args = self.get_arguments(None, line, 'java.lang.String')
+                #args = self.get_arguments(None, line, 'java.lang.String')
+                func_info = self.get_func_info(line)
+                args = self.get_params(line, func_info['params'], func_info['paramsType'])
+                print("string 1:", args)
                 if not args:
                     continue
 
@@ -79,13 +108,17 @@ class STRING(Plugin):
                 # get arguments
                 # TODO 应该有更好的办法，直接提取所有的字符串。
                 args = []
-                prog2 = re.compile(CONST_STRING)
-                for j in prog2.finditer(line):
-                    const_str = re.findall("\w+",j.group())[-1]
-                    arg = []
-                    for item in const_str.encode("UTF-8"):
-                        arg.append(item)
-                    args.append("java.lang.String:" + str(arg))
+                funcInfo = self.getfunc_info(line)
+                args = self.get_params(line, funcInfo['params'], funcInfo['paramsType'])
+                print("string 2:", args)
+
+                # prog2 = re.compile(self.CONST_STRING)
+                # for j in prog2.finditer(line):
+                #     const_str = re.findall("\w+",j.group())[-1]
+                #     arg = []
+                #     for item in const_str.encode("UTF-8"):
+                #         arg.append(item)
+                #     args.append("java.lang.String:" + str(arg))
 
                 if not args:
                     continue
@@ -155,13 +188,16 @@ class STRING(Plugin):
                 # TODO 后续再考虑使用通用的方式获取参数
                 # get arguments
                 args = []
-                match_string = re.compile(CONST_STRING)
-                for j in match_string.finditer(line):
-                    const_str = re.findall("\w+",j.group())[-1]
-                    arg = []
-                    for item in const_str.encode("UTF-8"):
-                        arg.append(item)
-                    args.append("java.lang.String:" + str(arg))
+                funcInfo = self.get_func_info(line)
+                args = self.get_params(line, funcInfo['params'], funcInfo['paramsType'])
+                print("string 3:", args)
+                # match_string = re.compile(CONST_STRING)
+                # for j in match_string.finditer(line):
+                #     const_str = re.findall("\w+",j.group())[-1]
+                #     arg = []
+                #     for item in const_str.encode("UTF-8"):
+                #         arg.append(item)
+                #     args.append("java.lang.String:" + str(arg))
 
                 # get classname
                 start = line.index('}, L')
