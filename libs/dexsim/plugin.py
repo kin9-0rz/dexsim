@@ -342,48 +342,6 @@ class Plugin(object):
 
         self.smali_files_update()
 
-    def optimizations(self, json_list, target_contexts):
-        '''
-            重复的代码，考虑去除
-            生成json
-            生成驱动解密
-            更新内存
-            写入文件
-        '''
-        if not json_list or not target_contexts:
-            return
-
-        jsons = JSONEncoder().encode(json_list)
-
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as fp:
-            fp.write(jsons)
-        outputs = self.driver.decode(fp.name)
-        os.unlink(fp.name)
-
-        # print(outputs)
-
-        # 替换内存
-        # output 存放的是解密后的结果。
-        for key in outputs:
-            if 'success' in outputs[key]:
-                if key not in target_contexts.keys():
-                    print('not found', key)
-                    continue
-                for item in target_contexts[key]:
-                    old_body = item[0].body
-                    target_context = item[1]
-                    new_context = item[2] + outputs[key][1]
-
-                    # It's not a string.
-                    if 'null' == outputs[key][1]:
-                        continue
-                    print('found sth:', outputs[key][1])
-                    item[0].body = old_body.replace(target_context, new_context)
-                    item[0].modified = True
-                    self.make_changes = True
-
-        self.smali_files_update()
-
     def smali_files_update(self):
         '''
             write changes to smali files
@@ -391,7 +349,7 @@ class Plugin(object):
         if self.make_changes:
             for smali_file in self.smali_files:
                 smali_file.update()
-
+                
 def main():
     obj = Plugin(None, None, None)
     line = '[I[B[Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;'
