@@ -54,6 +54,8 @@ class STRING(Plugin):
             for i in p.finditer(mtd.body):
                 line = i.group()
 
+                print(line)
+
                 args = self.get_arguments(None, line, 'java.lang.String')
                 if not args:
                     continue
