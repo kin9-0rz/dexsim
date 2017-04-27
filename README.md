@@ -19,10 +19,15 @@ Note: Please make sure your cmd can run baksmali/smali, adb, java.
 ### Support
 
 - [x] Ljava/lang/String;->\<init>([B)V
-- [x] func(Ljava/lang/String;)Ljava/lang/String;
-- [x] func(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
-- [x] func(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
-- [x] func(I)Ljava/lang/String;
-- [x] func(II)Ljava/lang/String;
-- [x] func(III)Ljava/lang/String;
-- [x] fun(Ljava/lang/String;)[B ---> Ljava/lang/String;-><init>([B)V
+- [ ] func(Ljava/lang/String;)Ljava/lang/String;
+- [ ] func(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+- [ ] func(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+- [ ] func(I)Ljava/lang/String;
+- [ ] func(II)Ljava/lang/String;
+- [ ] func(III)Ljava/lang/String;
+- [ ] func([B)Ljava/lang/String;
+- [ ] func([I)Ljava/lang/String;
+- [ ] Replace Variable : I
+- [ ] Replace Variable : Ljava/lang/String;
+- [ ] Replace Variable : [B
+- [ ] fun(Ljava/lang/String;)[B

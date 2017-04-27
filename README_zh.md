@@ -24,6 +24,7 @@
 - [x] func(II)Ljava/lang/String;
 - [x] func(III)Ljava/lang/String;
 - [x] func([B)Ljava/lang/String;
+- [x] func([I)Ljava/lang/String;
 - [x] Replace Variable : I
 - [x] Replace Variable : Ljava/lang/String;
 - [ ] Replace Variable : [B

@@ -31,6 +31,10 @@ class Plugin(object):
     MOVE_RESULT_OBJECT = 'move-result-object ([vp]\d+)'
     # new-array v1, v1, [B
     NEW_BYTE_ARRAY = 'new-array [vp]\d+, [vp]\d+, \[B\s+'
+    # new-array v1, v1, [B
+    NEW_INT_ARRAY = 'new-array [vp]\d+, [vp]\d+, \[I\s+'
+    # new-array v1, v1, [B
+    NEW_CHAR_ARRAY = 'new-array [vp]\d+, [vp]\d+, \[C\s+'
     # fill-array-data v1, :array_4e
     FILL_ARRAY_DATA = 'fill-array-data [vp]\d+, :array_[\w\d]+\s+'
 
@@ -81,8 +85,6 @@ class Plugin(object):
         if proto == '[B':
             ptn1 = re.compile(':array_[\w\d]+')
             array_data_name = ptn1.search(line).group()
-
-            reg = '\s+' + array_data_name + '\s+.array-data 1\s+' + '((0x[\da-f]{2}t)\s+)+' + '.end array-data'
             ptn2 = re.compile('\s+' + array_data_name + '\s+.array-data 1\s+' + '[\w\s]+' + '.end array-data')
 
             result = ptn2.search(mtd_body)
@@ -91,6 +93,18 @@ class Plugin(object):
                 byte_arr = []
                 for item in array_data_context.split()[3:-2]:
                     byte_arr.append(eval(item[:-1]))
+                args.append(proto + ':' + str(byte_arr))
+        elif proto == '[I':
+            ptn1 = re.compile(':array_[\w\d]+')
+            array_data_name = ptn1.search(line).group()
+            ptn2 = re.compile('\s+' + array_data_name + '\s+.array-data \d\s+' + '[-\w\s]+' + '.end array-data')
+
+            result = ptn2.search(mtd_body)
+            if result:
+                array_data_context = result.group()
+                byte_arr = []
+                for item in array_data_context.split()[3:-2]:
+                    byte_arr.append(eval(item))
                 args.append(proto + ':' + str(byte_arr))
         elif proto == 'java.lang.String':
             const_str = re.findall("\".+", line)[-1]
