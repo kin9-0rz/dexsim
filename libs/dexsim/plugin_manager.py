@@ -51,4 +51,9 @@ class PluginManager(object):
                 clazz = getattr(mod, attrname)
                 if not issubclass(clazz, Plugin):
                     continue
+
+                if not clazz.enabled:
+                    print("Don't load plugin", clazz.name)
+                    continue
+
                 self.__plugins.append(clazz(self.driver, self.methods, self.smali_files))

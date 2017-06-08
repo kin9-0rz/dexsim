@@ -7,13 +7,33 @@ import subprocess
 import shutil
 import zipfile
 import tempfile
+import sys
 
 from magic import Magic
 import powerzip
 
-from .dexsim.smali_file import SmaliFile
+from smali_file import SmaliFile
+
 from .dexsim.driver import Driver
 from .dexsim.oracle import Oracle
+
+main_path = ''
+for path in sys.path:
+    if path != '' and path in __file__:
+         main_path = path
+
+with open(os.path.join(main_path, "res", 'smali.txt'), 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+
+
+def clean(smali_dir):
+    # remove
+    for line in lines:
+        clz = line.split('#')[0]
+        path = smali_dir + os.sep + clz.replace('.', os.sep).strip('\n')
+        if os.path.exists(path):
+            print('del %s' % path)
+            shutil.rmtree(path)
 
 
 def dexsim(dex_file, smali_dir, include_str):
@@ -30,6 +50,7 @@ def baksmali(dex_file, output_dir='out'):
     '''
     cmd = 'baksmali d %s -o %s' % (dex_file, output_dir)
     subprocess.call(cmd, shell=True)
+    clean(output_dir)
 
     return output_dir
 
@@ -48,59 +69,64 @@ def main(args):
     include_str = args.i
     print()
 
+    smali_tempdir = tempfile.mkdtemp()
+
+    output_dex = None
+    if args.o:
+        output_dex = args.o
+
     if os.path.isdir(args.f):
         if args.f.endswith('\\') or args.f.endswith('/'):
             smali_dir = args.f[:-1]
         else:
             smali_dir = args.f
         dex_file = smali(smali_dir, os.path.basename(smali_dir) + '.dex')
-        dexsim(dex_file, smali_dir, include_str)
-        smali(smali_dir, os.path.basename(smali_dir) + '.sim.dex')
+        dexsim_dex(dex_file, smali_dir, include_str, output_dex)
     elif Magic(args.f).get_type() == 'apk':
         apk_path = args.f
 
-        apk_sim_path = os.path.splitext(args.f)[0] + '.sim.apk'
+        # 反编译所有的classes\d.dex文件
+        tempdir = tempfile.mkdtemp()
+        smali_tempdir = tempfile.mkdtemp()
 
-        shutil.copyfile(apk_path, apk_sim_path)
+        import re
+        ptn = re.compile(r'classes\d*.dex')
 
-        try:
-            pzip = powerzip.PowerZip(apk_path)
-        except zipfile.BadZipFile:
-            print("It seems the apk is corrupted. Please re-zip this apk, test again.")
-            return
+        import zipfile
+        zipFile = zipfile.ZipFile(apk_path)
+        for item in zipFile.namelist():
+            if ptn.match(item):
+                output_path = zipFile.extract(item, tempdir)
+                baksmali(output_path, smali_tempdir)
+        zipFile.close()
 
-        dexnames = []
-        for name in pzip.namelist():
-            if name.startswith('classes') and name.endswith('.dex'):
-                pzip.extract(name)
-                dexnames.append(name)
+        # 回编译为临时的dex文件
+        target_dex = os.path.join(tempdir, 'new.dex')
+        smali(smali_tempdir, target_dex)
 
-                dex_file = name
-                smali_dir = baksmali(dex_file)
-                dexsim(dex_file, smali_dir, include_str)
-                smali(smali_dir, dex_file)
-                shutil.rmtree(smali_dir)
-        pzip.close()
-
-        pzip = powerzip.PowerZip(apk_sim_path)
-        for name in dexnames:
-            pzip.add(name, name)
-            os.remove(name)
-        pzip.save(apk_sim_path)
-        pzip.close()
-
+        dexsim_dex(target_dex, smali_tempdir, include_str, output_dex)
+        shutil.rmtree(tempdir)
     else:
         dex_file = os.path.basename(args.f)
-        temp_dir = tempfile.TemporaryDirectory()
-        smali_dir = baksmali(dex_file, temp_dir.name)
-        dexsim(dex_file, smali_dir, include_str)
-        smali(smali_dir, os.path.splitext(os.path.basename(dex_file))[0] + '.sim.dex')
+        baksmali(dex_file, smali_tempdir)
+        dexsim_dex(dex_file, smali_tempdir, include_str, output_dex)
+
+
+
+def dexsim_dex(dex_file, smali_tempdir, include_str, output_dex):
+        dexsim(dex_file, smali_tempdir, include_str)
+        if output_dex:
+            smali(smali_tempdir, output_dex)
+        else:
+            smali(smali_tempdir, os.path.splitext(os.path.basename(dex_file))[0] + '.sim.dex')
+        shutil.rmtree(smali_tempdir)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='dexsim', description='dex simple, make dex more readable/simple.')
-    parser.add_argument('f', help='smali dir, later will support dex/apk')
+    parser.add_argument('f', help='input smali dir/dex/apk')
     parser.add_argument('-i', help='include string.')
+    parser.add_argument('-o', help='output file path')
 
     args = parser.parse_args()
 
