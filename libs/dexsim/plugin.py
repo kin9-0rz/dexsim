@@ -20,6 +20,7 @@ class Plugin(object):
     name = 'Plugin'
     description = ''
     version = ''
+    enabled = True
 
     # const/16 v2, 0x1a
     CONST_NUMBER = 'const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s+'
@@ -44,11 +45,36 @@ class Plugin(object):
     target_contexts = {}
 
 
+    def convert_type(self, _type, data):
+        arg = []
+        if _type == 'B':
+            return 'B:' + str(eval(data.strip()))
+
+        if _type == 'I':
+            return 'I:' + str(eval(data.strip()))
+
+        if _type == 'C':
+            return 'C:' + str(eval(data.strip()))
+
+        if _type == 'J':
+            return 'J:' + str(eval(data.strip()))
+
+        if _type == 'D':
+            pass
+
+        if _type == 'F':
+            pass
+
+        if _type == 'Ljava/lang/String;':
+            for item in data.encode("UTF-8"):
+                arg.append(item)
+            return "java.lang.String:" + str(arg)
+
     def get_invoke_pattern(self, args):
         '''
             根据参数，生成对应invoke-static语句的正则表达式(RE)
         '''
-        return r'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(%s\))Ljava/lang/String;\s+' % args
+        return r'invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(%s\))Ljava/lang/String;\s*' % args
 
     def get_class_name(self, line):
         start = line.index('}, L')
@@ -134,6 +160,19 @@ class Plugin(object):
         item['id'] = ID
         return item
 
+    def append_json_item2(self, json_item, mtd, line, return_variable_name):
+        '''
+            添加到json_list, target_contexts
+        '''
+        mid = json_item['id']
+        if mid not in self.target_contexts.keys():
+            self.target_contexts[mid] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
+        else:
+            self.target_contexts[mid].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
+
+        if json_item not in self.json_list:
+            self.json_list.append(json_item)
+
 
     def append_json_item(self, json_item, mtd, line, return_variable_name):
         '''
@@ -160,6 +199,57 @@ class Plugin(object):
             匹配代码，生成指定格式的文件(包含类名、方法、参数)
         '''
         pass
+
+    def get_types(self, proto):
+        return re.findall('\[?L[\w\/]+;|\[?\w', proto)
+
+    def optimize2(self):
+        print('Here is the optimize2')
+        if not self.json_list or not self.target_contexts:
+            return
+
+        jsons = JSONEncoder().encode(self.json_list)
+
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as fp:
+            fp.write(jsons)
+
+        import shutil
+        shutil.copy(fp.name, 't.json')
+        outputs = self.driver.decode(fp.name)
+        os.unlink(fp.name)
+
+        print(outputs)
+
+        # 替换内存
+        # output 存放的是解密后的结果。
+        for key in outputs:
+            if 'success' in outputs[key]:
+                if key not in self.target_contexts.keys():
+                    print('not found', key)
+                    continue
+                for item in self.target_contexts[key]:
+                    # It's not a string.
+                    if 'null' == outputs[key][1]:
+                        continue
+
+                    old_body = item[0].body
+                    target_context = item[1]
+                    new_context = item[2] + outputs[key][1]
+
+                    # print(target_context) -
+                    # FIXME 可能存在 - 解密方法一模一样，而替换的时候，有可能把所有的都替换了！
+                    INVOKE_STATIC = r'invoke-static[/\s\w]+\{([vp,\d\s\.]+)},\s+([^;]+);->(.*?)\((.*?)\)(.*)\s*'
+                    CONST_STRING = 'const-string ([vp]\d+), "(.*?)".*'
+                    tmp_context = re.sub(CONST_STRING, '', target_context, flags=re.IGNORECASE)
+                    tmp_context = re.sub(INVOKE_STATIC, '', tmp_context, flags=re.IGNORECASE)
+
+                    new_context = re.sub(self.MOVE_RESULT_OBJECT, new_context, tmp_context, flags=re.IGNORECASE)
+
+                    item[0].body = old_body.replace(target_context, new_context)
+                    item[0].modified = True
+                    self.make_changes = True
+
+        self.smali_files_update()
 
     def optimize(self):
         '''

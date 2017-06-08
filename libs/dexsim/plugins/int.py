@@ -15,6 +15,7 @@ class INT(Plugin):
     name = "INT"
     version = '0.0.3'
     description = '解密参数是INT类型'
+    enabled = True
 
     def __init__(self, driver, methods, smali_files):
         Plugin.__init__(self, driver, methods, smali_files)

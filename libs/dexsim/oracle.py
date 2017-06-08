@@ -1,6 +1,6 @@
 import os
 
-from .smali_file import SmaliFile
+from smali_file import SmaliFile
 from .plugin_manager import PluginManager
 
 
