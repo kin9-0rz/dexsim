@@ -12,7 +12,7 @@ import sys
 from magic import Magic
 import powerzip
 
-from smali_file import SmaliFile
+from smafile import SmaliFile
 
 from .dexsim.driver import Driver
 from .dexsim.oracle import Oracle
@@ -123,9 +123,9 @@ def dexsim_dex(dex_file, smali_tempdir, include_str, output_dex):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog='dexsim', description='dex simple, make dex more readable/simple.')
-    parser.add_argument('f', help='input smali dir/dex/apk')
-    parser.add_argument('-i', help='include string.')
+    parser = argparse.ArgumentParser(prog='dexsim', description='')
+    parser.add_argument('f', help='Smali Directory / DEX / APK')
+    parser.add_argument('-i', help='Only optimize methods and classes matching the pattern, e.g. La/b/c;->decode')
     parser.add_argument('-o', help='output file path')
 
     args = parser.parse_args()
