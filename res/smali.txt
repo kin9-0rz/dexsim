@@ -1,0 +1,120 @@
+android.support
+android.support.annotation
+android.support.v13
+android.support.v4
+com.purplebrain.adbuddiz.sdk
+android.support.v7
+com.boontaran
+com.supersonicads.sdk
+com.dataeye
+cn.flyco.pageindicator# A Page Indicator Lib https://github.com/H07000223/FlycoPageIndicator
+com.startapp.android.publish
+com.nb.sdk
+com.googlecode.androidannotations# http://androidannotations.org/ AndroidAnnotations是一个利用注解方式来简化代码结构，提高开发效率的开源框架。
+com.hft.juhepay
+com.flurry.android
+com.flurry.sdk
+cn.appmedia.ad
+com.splunk.mint# https://mint.splunk.com/
+com.amazon.device.ads
+com.appintop# https://appintop.com/
+com.applovin# https://www.applovin.com/
+com.immersion# http://www.immersion.com/
+com.jirbo.adcolony# http://www.adcolony.com/
+cn.domob.android.ads
+cn.domob.android.download
+com.supersonic
+com.actionbarsherlock
+com.personagraph# http://www.personagraph.com/
+com.smaato.soma# https://www.smaato.com/
+com.tapsense# http://www.tapsense.com/
+com.unity3d.ads# https://unity3d.com/services/ads
+com.yandex# https://tech.yandex.com/metrica-mobile-sdk/
+com.adchina.android
+com.alibaba.fastjson
+com.amazonaws
+com.androidqueryo
+com.anjlab.android.iab.v3
+com.badlogic.gdx#Desktop/Android/HTML5/iOS Java game development framework https://github.com/libgdx/libgdx
+com.baidu.android.bba.common
+com.baidu.android.pushservice
+com.baidu.appsearch.patchupdate
+com.baidu.appx
+com.baidu.autoupdatesdk
+com.baidu.frontia
+com.baidu.kirin
+com.baidu.loctp
+com.baidu.mobad
+com.baidu.mobads
+com.baidu.mobstat
+com.casee.adsdk
+com.chartboost.sdk
+com.crashlytics.android#Crashlytics, Android 崩溃及异常自动收集工具
+com.energysource.szj
+com.facebook
+com.google.ads
+com.google.analytics
+com.google.android.gms
+com.google.android.youtube.player
+com.google.gson
+com.google.tagmanager
+com.inmobi
+com.jcraft.jsch#http://www.jcraft.com/jsch/
+com.jgoodies.common
+com.loopj.android.http
+com.madhouse.android.ads
+com.memetix.mst
+com.millennialmedia.android
+com.mobclick.android.
+com.nd.dianjin
+com.nostra13.universalimageloader
+com.parse
+com.ryg.dynamicload
+com.ryg.utils
+com.smartfoxserver
+com.squareup#UNIVERSAL IMAGE LOADER，开源图片加载库
+com.sun.activation.registries
+com.sun.mail
+com.tencent.bugly
+com.tencent.smtt
+com.tencent.tbs
+com.tendcloud.tenddata
+com.umeng
+com.umeng.analytics
+com.vpon.adon.android
+com.wiyun.ad
+com.wooboo
+com.wqmobile.sdk
+dagger#DI框架，http://square.github.io/dagger
+io.fabric.sdk.android#一套 Twitter 开发的模块化开发工具包, https://get.fabric.io/
+io.realm#一个轻量级的数据库,它可以替代 SQLite 和 ORM 框架, https://realm.io/
+com.ldw.music# https://github.com/longdw/MyMusic https://github.com/dubinwei/meimei
+com.mopub# https://github.com/mopub/mopub-android-sdk
+java.util
+javax.activation
+javax.inject
+javax.mail
+net.youmi.android
+okio#https://github.com/square/okio
+org.apache.common.io
+org.apache.commons
+org.apache.harmony
+org.apache.http
+org.cocos2dx
+org.cocos2d
+org.hibernate
+org.jboss.netty
+org.json.simple
+org.jsoup
+org.slf4j
+org.w3c.dom
+org.xml.sax
+sfs2x.client
+sfs2x.fsm
+u.aly
+uk.co.senab.actionbarpulltorefresh# DEPRECATED https://github.com/chrisbanes/ActionBar-PullToRefresh
+org.holoeverywhere# NO LONGER MAINTAINED. DEVELOP FOR 4.X+ DUDE. https://github.com/Prototik/HoloEverywhere
+com.nineoldandroids# DEPRECATED https://github.com/JakeWharton/NineOldAndroids
+com.mpatric.mp3agic# A java library for reading mp3 files  https://github.com/mpatric/mp3agic
+io.card.payment#https://github.com/card-io/card.io-Android-source
+com.paypal.android.sdk#https://github.com/paypal/PayPal-Android-SDK
