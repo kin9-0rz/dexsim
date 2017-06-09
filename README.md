@@ -27,13 +27,13 @@ For Win, maybe you need two bat files:
 
 **smali.bat**
 
-```visual basic
+```
 @echo off
 java -jar %~dp0smali.jar %*
 ```
 
 **baksmali.bat**
-```visual basic
+```
 @echo off
 java -jar %~dp0baksmali.jar %*
 ```
