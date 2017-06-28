@@ -15,7 +15,7 @@ class INT(Plugin):
     name = "INT"
     version = '0.0.3'
     description = '解密参数是INT类型'
-    enabled = True
+    enabled = False
 
     def __init__(self, driver, methods, smali_files):
         Plugin.__init__(self, driver, methods, smali_files)
@@ -41,6 +41,7 @@ class INT(Plugin):
         '''
         invoke_ptn = self.get_invoke_pattern('III')
         target_ptn = '\s+' + (self.CONST_NUMBER + '\s+') * 3 + invoke_ptn + self.MOVE_RESULT_OBJECT
+        print(target_ptn)
 
         prog = re.compile(target_ptn)
 
@@ -83,7 +84,7 @@ class INT(Plugin):
         '''
         invoke_ptn = self.get_invoke_pattern('III')
         prog = re.compile(invoke_ptn + self.MOVE_RESULT_OBJECT)
-
+        print(invoke_ptn + self.MOVE_RESULT_OBJECT)
         self.json_list = []
         self.target_contexts = {}
 
@@ -141,7 +142,7 @@ class INT(Plugin):
 
         INVOKE_STATIC_II = self.get_invoke_pattern('II')
         prog = re.compile('\s+' + self.CONST_NUMBER * 2 + INVOKE_STATIC_II + self.MOVE_RESULT_OBJECT)
-
+        print('\s+' + self.CONST_NUMBER * 2 + INVOKE_STATIC_II + self.MOVE_RESULT_OBJECT)
         self.json_list = []
         self.target_contexts = {}
 
@@ -174,7 +175,7 @@ class INT(Plugin):
         '''
         INVOKE_STATIC_I = self.get_invoke_pattern('I')
         prog = re.compile('\s+' + self.CONST_NUMBER + INVOKE_STATIC_I + self.MOVE_RESULT_OBJECT)
-
+        print('\s+' + self.CONST_NUMBER + INVOKE_STATIC_I + self.MOVE_RESULT_OBJECT)
         json_list = []
         target_contexts = {}
         for mtd in self.methods:

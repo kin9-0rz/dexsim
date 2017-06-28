@@ -14,7 +14,7 @@ class STRING(Plugin):
 
     name = "STRING"
     version = '0.0.3'
-    enabled = True
+    enabled = False
 
     def __init__(self, driver, methods, smali_files):
         Plugin.__init__(self, driver, methods, smali_files)
@@ -48,6 +48,8 @@ class STRING(Plugin):
         INVOKE_STATIC = self.get_invoke_pattern('Ljava/lang/String;')
 
         p = re.compile('\s+' + self.CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
+
+        print('\s+' + self.CONST_STRING + '\s+' + INVOKE_STATIC + self.MOVE_RESULT_OBJECT)
 
         self.json_list = []
         self.target_contexts = {}

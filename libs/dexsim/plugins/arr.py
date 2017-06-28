@@ -12,7 +12,7 @@ class Arr(Plugin):
     name = "ARRAY"
     version = '0.0.2'
     description = '参数类型 [B'
-    enabled = True
+    enabled = False
 
     def __init__(self, driver, methods, smali_files):
         Plugin.__init__(self, driver, methods, smali_files)
@@ -36,6 +36,7 @@ class Arr(Plugin):
         '''
         invoke_ptn = self.get_invoke_pattern('\[B')
         ptn = self.NEW_BYTE_ARRAY + self.FILL_ARRAY_DATA + invoke_ptn + self.MOVE_RESULT_OBJECT
+        print(ptn)
         p1 = re.compile(ptn)
 
         self.json_list = []
@@ -73,6 +74,7 @@ class Arr(Plugin):
         '''
         invoke_ptn = self.get_invoke_pattern('\[I')
         ptn = self.NEW_INT_ARRAY + self.FILL_ARRAY_DATA + invoke_ptn + self.MOVE_RESULT_OBJECT
+        print(ptn)
         p1 = re.compile(ptn)
 
         self.json_list = []
