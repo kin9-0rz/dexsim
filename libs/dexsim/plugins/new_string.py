@@ -15,7 +15,7 @@ class NEW_STRING(Plugin):
 
     name = "NEW_STRING"
     version = '0.0.2'
-    enabled = True
+    enabled = False
 
     def __init__(self, driver, methods, smali_files):
         Plugin.__init__(self, driver, methods, smali_files)
