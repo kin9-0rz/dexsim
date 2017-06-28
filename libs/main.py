@@ -9,7 +9,7 @@ import zipfile
 import tempfile
 import sys
 
-from magic import Magic
+from cigam import Magic
 import powerzip
 
 from smafile import SmaliFile
