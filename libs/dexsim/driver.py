@@ -50,15 +50,18 @@ class Driver:
 
         output_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
         self.adb.run_cmd(['pull', '/data/local/od-output.json', output_file.name])
-        self.adb.shell_command(['rm', '/data/local/od-output.json'])
 
+        result = ''
         try:
             output_file = open(output_file.name, encoding='utf-8')
-            s = json.load(output_file)
-            output_file.close()
-            os.unlink(output_file.name)
-            return s
-        except json.decoder.JSONDecodeError:
+            result = json.load(output_file)
+        except Exception as e:
+            print(e)
+            import shutil
+            shutil.copy(output_file.name, 'output.txt')
             self.adb.run_cmd(['pull', '/data/local/od-exception.txt', 'exception.txt'])
             self.adb.shell_command(['rm', '/data/local/od-exception.txt'])
-            return ''
+
+        output_file.close()
+        os.unlink(output_file.name)
+        return result

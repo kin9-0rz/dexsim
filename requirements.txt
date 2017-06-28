@@ -1,4 +1,4 @@
 powerzip==0.0.1
 adbwrapper==0.0.3
-mini-magic==0.0.4
+cigam==0.0.1
 smafile==0.0.3
