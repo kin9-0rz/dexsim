@@ -1,0 +1,34 @@
+# decode string
+-  str1:
+    enabled: 1
+    args: java.lang.String
+    reg:
+      - const-string [vp]\d+, "(.*?)".*\s*
+      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(Ljava/lang/String;\))
+      - Ljava/lang/String;\s*
+      - move-result-object ([vp]\d+)
+    comment:
+      - const-string v3, "encoded string"
+      - invoke-static {v3}, La/b/c;->decrypt(Ljava/lang/String;)Ljava/lang/String;
+      - move-result-object v4
+      - ->
+      - const-string v4, "decoded string"
+- str2:
+    enabled: 1
+    args: java.lang.String
+    reg:
+      - const-string [vp]\d+, "(.*?)".*\s*
+      - const-string [vp]\d+, "(.*?)".*\s*
+      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(Ljava/lang/String;Ljava/lang/String;\))
+      - Ljava/lang/String;\s*
+      - move-result-object ([vp]\d+)
+- str3:
+    enabled: 1
+    args: java.lang.String
+    reg:
+      - const-string [vp]\d+, "(.*?)".*\s*
+      - const-string [vp]\d+, "(.*?)".*\s*
+      - const-string [vp]\d+, "(.*?)".*\s*
+      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\))
+      - Ljava/lang/String;\s*
+      - move-result-object ([vp]\d+)
