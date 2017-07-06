@@ -107,7 +107,7 @@ class Plugin(object):
         '''
             获取参数
         '''
-        args = []
+        arguments = []
         if proto == '[B':
             ptn1 = re.compile(':array_[\w\d]+')
             array_data_name = ptn1.search(line).group()
@@ -119,7 +119,7 @@ class Plugin(object):
                 byte_arr = []
                 for item in array_data_context.split()[3:-2]:
                     byte_arr.append(eval(item[:-1]))
-                args.append(proto + ':' + str(byte_arr))
+                arguments.append(proto + ':' + str(byte_arr))
         elif proto == '[I':
             ptn1 = re.compile(':array_[\w\d]+')
             array_data_name = ptn1.search(line).group()
@@ -131,20 +131,36 @@ class Plugin(object):
                 byte_arr = []
                 for item in array_data_context.split()[3:-2]:
                     byte_arr.append(eval(item))
-                args.append(proto + ':' + str(byte_arr))
+                arguments.append(proto + ':' + str(byte_arr))
         elif proto == 'java.lang.String':
-            const_str = re.findall("\".+", line)[-1]
-            arg1 = []
-            for item in const_str[1:-1].encode("UTF-8"):
-                arg1.append(item)
-            args.append("java.lang.String:" + str(arg1))
+            # print(line)
+            ptn = re.compile(r'\"(.*?)\"')
+            result = ptn.findall(line)
+
+
+            import unicodedata
+            # print(dir(unicodedata))
+            import binascii
+            for item in result:
+                args = []
+                # # print('-' * 10)
+                # # print(item.encode('utf-8'))
+                # # print(binascii.hexlify(item.encode('utf-8')))
+                # # print()
+                # # print('-' * 10)
+                # # print([i for i in item.encode("UTF-8")])
+                for i in item.encode("UTF-8"):
+                    args.append(i)
+                # # print(args)
+                # # print('=' * 10)
+                arguments.append("java.lang.String:" + str(args))
         elif proto in ['I', 'II', 'III']:
             prog2 = re.compile(self.CONST_NUMBER)
-            args = []
+            arguments = []
             for item in prog2.finditer(line):
                 cn = item.group().split(", ")
-                args.append('I:' + str(eval(cn[1].strip())))
-        return args
+                arguments.append('I:' + str(eval(cn[1].strip())))
+        return arguments
 
     def get_return_variable_name(self, line):
         p3 = re.compile(self.MOVE_RESULT_OBJECT)
@@ -276,6 +292,7 @@ class Plugin(object):
                 if key not in self.target_contexts.keys():
                     print('not found', key)
                     continue
+                # json_item, mtd, old_content, rtn_name
                 for item in self.target_contexts[key]:
                     old_body = item[0].body
                     target_context = item[1]
@@ -284,6 +301,7 @@ class Plugin(object):
                     # It's not a string.
                     if 'null' == outputs[key][1]:
                         continue
+                        
                     item[0].body = old_body.replace(target_context, new_context)
                     item[0].modified = True
                     self.make_changes = True

@@ -1,0 +1,19 @@
+# decode int
+-  int_arr:
+    enabled: 1
+    args: \[I
+    reg:
+      - new-array [vp]\d+, [vp]\d+, \[I\s*
+      - fill-array-data [vp]\d+, :array_[\w\d]+\s*
+      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(\[I\))
+      - Ljava/lang/String;\s*
+      - move-result-object ([vp]\d+)
+-  byte_arr:
+    enabled: 1
+    args: \[B
+    reg:
+      - new-array [vp]\d+, [vp]\d+, \[B\s*
+      - fill-array-data [vp]\d+, :array_[\w\d]+\s*
+      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(\[B\))
+      - Ljava/lang/String;\s*
+      - move-result-object ([vp]\d+)
