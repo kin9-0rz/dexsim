@@ -109,6 +109,7 @@ class NEW_STRING(Plugin):
                 arr.append('return-object %s' % return_register_name)
                 try:
                     decoded_string = self.emu.call(arr)
+                
                     if decoded_string:
                         new_line = 'const-string %s, "%s"' % (return_register_name, decoded_string)
                 except UnsupportedOpcodeError as e:
