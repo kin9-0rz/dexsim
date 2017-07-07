@@ -45,8 +45,10 @@ class TEMPLET(Plugin):
         p = re.compile(reg)
 
         self.json_list = []
-        self.target_contexts = {}
         for mtd in self.methods:
+            # if 'com/a/e;->a(Ljava/lang/String;Ljava/lang/String;IIII)Ljava/lang/String;' not in mtd.descriptor:
+            #     continue
+
             for i in p.finditer(mtd.body):
                 old_content = i.group()
                 # FIXME 参数的检索方法
@@ -70,12 +72,7 @@ class TEMPLET(Plugin):
                     continue
 
                 cls_name, mtd_name, rtn_name = self.get_clz_mtd_rtn_name(old_content)
-                # print('-' * 80)
-                # print(cls_name, mtd_name, rtn_name)
-                # print(old_content)
-                # print('arguments', arguments)
-                # print('-' * 80)
+
                 json_item = self.get_json_item(cls_name, mtd_name, arguments)
                 self.append_json_item(json_item, mtd, old_content, rtn_name)
-        #
         self.optimize()

@@ -67,8 +67,8 @@ class NEW_STRING(Plugin):
                         decoded_string = (self.emu.call(tmp))
                         if decoded_string:
                             new_line = 'const-string %s, "%s"' % (return_register_name, decoded_string)
-                    except UnsupportedOpcodeError as e:
-                        # print(e)
+                    except Exception as e:
+                        # TODO log2file
                         pass
 
                 if new_line:
@@ -88,20 +88,20 @@ class NEW_STRING(Plugin):
     def __process_to_string(self):
         to_string_re = (r'new-instance v\d+, Ljava/lang/StringBuilder;[\w\W\s]+?{(v\d+)[.\sv\d]*}, Ljava/lang/StringBuilder;->toString\(\)Ljava/lang/String;')
         ptn2 = re.compile(to_string_re)
-
         for mtd in self.methods:
+
             if 'const-string' not in mtd.body:
                 continue
-
             if 'Ljava/lang/StringBuilder;-><init>' not in mtd.body:
                 continue
             if 'Ljava/lang/StringBuilder;->toString()Ljava/lang/String;' not in mtd.body:
                 continue
 
             flag = False
-            new_line = None
+            new_content = None
 
             result = ptn2.finditer(mtd.body)
+
             for item in result:
                 return_register_name = item.groups()[0]
                 old_content = item.group()
@@ -109,16 +109,19 @@ class NEW_STRING(Plugin):
                 arr.append('return-object %s' % return_register_name)
                 try:
                     decoded_string = self.emu.call(arr)
-                
+
+                    if len(self.emu.vm.exceptions) > 0:
+                        continue
+
                     if decoded_string:
-                        new_line = 'const-string %s, "%s"' % (return_register_name, decoded_string)
-                except UnsupportedOpcodeError as e:
+                        new_content = 'const-string %s, "%s"' % (return_register_name, decoded_string)
+                except Exception as e:
                     # print(e)
                     continue
 
-                if new_line:
+                if new_content:
                     flag = True
-                    mtd.body = mtd.body.replace(old_content, new_line)
+                    mtd.body = mtd.body.replace(old_content, new_content)
 
             if flag:
                 mtd.modified = True
