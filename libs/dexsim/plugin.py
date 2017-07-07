@@ -143,16 +143,24 @@ class Plugin(object):
             for item in result:
                 args = []
                 # # print('-' * 10)
-                # # print(item.encode('utf-8'))
-                # # print(binascii.hexlify(item.encode('utf-8')))
-                # # print()
-                # # print('-' * 10)
-                # # print([i for i in item.encode("UTF-8")])
+
+                import codecs
+                item = codecs.getdecoder('unicode_escape')(item)[0]
+
+                # if '\\u' in item:
+                #     print(item)
+                #     item = item.encode('UTF-8').decode('unicode_escape')
+                # print(type(x))
+                # print([ord(i) for i in x])
+                # for i in x.encode("UTF-8"):
+                #     print(i, end=' ')
+                #     args.append(i)
+
                 for i in item.encode("UTF-8"):
                     args.append(i)
-                # # print(args)
-                # # print('=' * 10)
+                # print([ord(i) for i in item])
                 arguments.append("java.lang.String:" + str(args))
+            # raise Exception()
         elif proto in ['I', 'II', 'III']:
             prog2 = re.compile(self.CONST_NUMBER)
             arguments = []
