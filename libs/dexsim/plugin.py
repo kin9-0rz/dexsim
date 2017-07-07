@@ -44,7 +44,6 @@ class Plugin(object):
     # 目标上下文，解密后用于替换
     target_contexts = {}
 
-
     def convert_type(self, _type, data):
         arg = []
         if _type == 'B':
@@ -169,40 +168,26 @@ class Plugin(object):
 
     def get_json_item(self, cls_name, mtd_name, args):
         '''
-            生产解密目标
+            生成解密目标
         '''
         item = {'className': cls_name, 'methodName': mtd_name, 'arguments': args}
         ID = hashlib.sha256(JSONEncoder().encode(item).encode('utf-8')).hexdigest()
         item['id'] = ID
         return item
 
-    def append_json_item2(self, json_item, mtd, line, return_variable_name):
+    def append_json_item(self, json_item, mtd, old_content, return_variable_name):
         '''
             添加到json_list, target_contexts
         '''
         mid = json_item['id']
+        new_content = '\n\n    const-string %s, ' % return_variable_name
         if mid not in self.target_contexts.keys():
-            self.target_contexts[mid] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
+            self.target_contexts[mid] = [(mtd, old_content, new_content)]
         else:
-            self.target_contexts[mid].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
+            self.target_contexts[mid].append((mtd, old_content, new_content))
 
         if json_item not in self.json_list:
             self.json_list.append(json_item)
-
-
-    def append_json_item(self, json_item, mtd, line, return_variable_name):
-        '''
-            添加到json_list, target_contexts
-        '''
-        mid = json_item['id']
-        if mid not in self.target_contexts.keys():
-            self.target_contexts[mid] = [(mtd, line, '\n\n    const-string %s, ' % return_variable_name)]
-        else:
-            self.target_contexts[mid].append((mtd, line, '\n\n    const-string %s, ' % return_variable_name))
-
-        if json_item not in self.json_list:
-            self.json_list.append(json_item)
-
 
     def __init__(self, driver, methods, smali_files):
         self.make_changes = False
@@ -218,54 +203,6 @@ class Plugin(object):
 
     def get_types(self, proto):
         return re.findall('\[?L[\w\/]+;|\[?\w', proto)
-
-    def optimize2(self):
-        print('Here is the optimize2')
-        if not self.json_list or not self.target_contexts:
-            return
-
-        jsons = JSONEncoder().encode(self.json_list)
-
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as fp:
-            fp.write(jsons)
-
-        import shutil
-        shutil.copy(fp.name, 't.json')
-        outputs = self.driver.decode(fp.name)
-        os.unlink(fp.name)
-
-        print(outputs)
-
-        # 替换内存
-        # output 存放的是解密后的结果。
-        for key in outputs:
-            if 'success' in outputs[key]:
-                if key not in self.target_contexts.keys():
-                    print('not found', key)
-                    continue
-                for item in self.target_contexts[key]:
-                    # It's not a string.
-                    if 'null' == outputs[key][1]:
-                        continue
-
-                    old_body = item[0].body
-                    target_context = item[1]
-                    new_context = item[2] + outputs[key][1]
-
-                    # print(target_context) -
-                    # FIXME 可能存在 - 解密方法一模一样，而替换的时候，有可能把所有的都替换了！
-                    INVOKE_STATIC = r'invoke-static[/\s\w]+\{([vp,\d\s\.]+)},\s+([^;]+);->(.*?)\((.*?)\)(.*)\s*'
-                    CONST_STRING = 'const-string ([vp]\d+), "(.*?)".*'
-                    tmp_context = re.sub(CONST_STRING, '', target_context, flags=re.IGNORECASE)
-                    tmp_context = re.sub(INVOKE_STATIC, '', tmp_context, flags=re.IGNORECASE)
-
-                    new_context = re.sub(self.MOVE_RESULT_OBJECT, new_context, tmp_context, flags=re.IGNORECASE)
-
-                    item[0].body = old_body.replace(target_context, new_context)
-                    item[0].modified = True
-                    self.make_changes = True
-
-        self.smali_files_update()
 
     def optimize(self):
         '''
@@ -295,14 +232,14 @@ class Plugin(object):
                 # json_item, mtd, old_content, rtn_name
                 for item in self.target_contexts[key]:
                     old_body = item[0].body
-                    target_context = item[1]
-                    new_context = item[2] + outputs[key][1]
+                    old_content = item[1]
+                    new_content = item[2] + outputs[key][1]
 
                     # It's not a string.
                     if 'null' == outputs[key][1]:
                         continue
-                        
-                    item[0].body = old_body.replace(target_context, new_context)
+
+                    item[0].body = old_body.replace(old_content, new_content)
                     item[0].modified = True
                     self.make_changes = True
 
@@ -346,6 +283,7 @@ class Plugin(object):
                     item[0].body = old_body.replace(target_context, new_context)
                     item[0].modified = True
                     self.make_changes = True
+
 
         self.smali_files_update()
 
