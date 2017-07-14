@@ -2,5 +2,5 @@ powerzip==0.0.1
 adbwrapper==0.0.3
 cigam==0.0.1
 smafile==0.0.5
-smaliemu==0.0.5
-pyaml=16.12.2
+smaliemu==0.0.8
+pyaml==16.12.2
