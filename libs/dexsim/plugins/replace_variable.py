@@ -64,10 +64,10 @@ class ReplaceVariable(Plugin):
             for mtd in self.methods:
                 for i in p2.finditer(mtd.body):
                     line = i.group()
-                    old_context = line
-                    new_context = line.replace(
+                    old_content = line
+                    new_content = line.replace(
                         'sget-object', 'const-string').replace(key, fields[key])
-                    mtd.body = mtd.body.replace(old_context, new_context)
+                    mtd.body = mtd.body.replace(old_content, new_content)
                     mtd.modified = True
                     self.make_changes = True
 
@@ -120,9 +120,9 @@ class ReplaceVariable(Plugin):
                     if int(register[1:-1]) > 15 and wide == 4:
                         opcode_name = opcode_name[:idx+1] + '16'
 
-                    new_context = opcode_name + ' ' + register + ' ' + value
-                    old_context = line
-                    mtd.body = mtd.body.replace(old_context, new_context)
+                    new_content = opcode_name + ' ' + register + ' ' + value
+                    old_content = line
+                    mtd.body = mtd.body.replace(old_content, new_content)
 
                     mtd.modified = True
                     self.make_changes = True
@@ -148,14 +148,14 @@ class ReplaceVariable(Plugin):
 
         for mtd in self.methods:
             for i in p.finditer(mtd.body):
-                old_context = i.group()
+                old_content = i.group()
 
-                tmp = old_context.split('"')
+                tmp = old_content.split('"')
                 old_value = '"' + tmp[3] + '"'
                 new_value = '"' + tmp[1] + tmp[3] + '"'
-                index = old_context.rindex('\n\n    const-string ')
-                new_context = old_context[index:].replace(old_value, new_value)
-                mtd.body = mtd.body.replace(old_context, new_context)
+                index = old_content.rindex('\n\n    const-string ')
+                new_content = old_content[index:].replace(old_value, new_value)
+                mtd.body = mtd.body.replace(old_content, new_content)
                 mtd.modified = True
                 self.make_changes = True
 
