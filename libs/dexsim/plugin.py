@@ -43,6 +43,14 @@ class Plugin(object):
     json_list = []
     # 目标上下文，解密后用于替换
     target_contexts = {}
+    # 保存参数:array_的内容？有必要么？ sget可能会重复获取
+    data_arraies = {}
+
+    def __init__(self, driver, methods, smali_files):
+        self.make_changes = False
+        self.driver = driver
+        self.methods = methods
+        self.smali_files = smali_files
 
     def convert_type(self, _type, data):
         arg = []
@@ -102,10 +110,78 @@ class Plugin(object):
         rtn_name = mro_statement[mro_statement.rindex(' ') + 1:]
         return (clz_name, mtd_name, rtn_name)
 
+    def get_array_data(self, contant):
+        ptn1 = re.compile(':array_[\w\d]+')
+        array_data_name = ptn1.search(line).group()
+        pass
+
+    def get_arguments_from_clinit(self, field):
+        reg = '([\w\W]+?)sput-object (v\d+), %s' % re.escape(field)
+        sput_obj_ptn = re.compile(reg)
+
+        from smaliemu.emulator import Emulator
+        emu = Emulator()
+
+        array_data_ptn = re.compile(r':array_[\w\d]+\s*.array-data[\w\W\s]+.end array-data')
+
+
+        class_name = field.split('->')[0]
+        for sf in self.smali_files:
+            if sf.class_name == class_name:
+                for mtd in sf.methods:
+                    arr = []
+                    if mtd.name == '<clinit>':
+                        matchs = sput_obj_ptn.search(mtd.body).groups()
+                        snippet = matchs[0]
+                        code_content = matchs[0]
+                        array_data_context = re.split(r'\n+', array_data_ptn.search(mtd.body).group())
+                        # print(array_data_context)
+
+                        return_register_name = matchs[1]
+                        arr = re.split(r'\n+', snippet)[:-1]
+                        arr.append('return-object %s' % return_register_name)
+                        arr.extend(array_data_context)
+                        # print(arr)
+                        # raise Exception
+
+
+
+
+                        try:
+                            # TODO 默认异常停止，这种情况可以考虑，全部跑一遍。
+                            # 因为有可能参数声明的时候，位置错位，还有可能是寄存器复用。
+                            arr_data = emu.call(arr, thrown=True)
+                            if len(emu.vm.exceptions) > 0:
+                                break
+
+                            arguments = []
+                            byte_arr = []
+                            for item in arr_data:
+                                if item == '':
+                                    item = 0
+                                byte_arr.append(item)
+                            arguments.append('[B:' + str(byte_arr))
+
+                            return arguments
+                        except Exception as e:
+                            print(e)
+                            pass
+                        break
+
+
     def get_arguments(self, mtd_body, line, proto):
         '''
             获取参数
+
+            sget-object v1, Lcom/a/e/b;->K:[B
+            invoke-static {v1}, Lcom/a/n/o;->a([B)Ljava/lang/String;
+            move-result-object v1
+
+            在smali初始化的时候，
+            .method static constructor <clinit>()V 中，
+            如果存在 sput-object 操作，则考虑解密获取这个值，仅仅用于转换？
         '''
+
         arguments = []
         if proto == '[B':
             ptn1 = re.compile(':array_[\w\d]+')
@@ -196,12 +272,6 @@ class Plugin(object):
 
         if json_item not in self.json_list:
             self.json_list.append(json_item)
-
-    def __init__(self, driver, methods, smali_files):
-        self.make_changes = False
-        self.driver = driver
-        self.methods = methods
-        self.smali_files = smali_files
 
     def run(self):
         '''

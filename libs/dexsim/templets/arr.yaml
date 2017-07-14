@@ -17,3 +17,11 @@
       - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(\[B\))
       - Ljava/lang/String;\s*
       - move-result-object ([vp]\d+)
+-  byte_arr_sget:
+    enabled: 1
+    args: \[B
+    reg:
+      - sget-object (v\d+), (.+)\s*
+      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(\[B\))
+      - Ljava/lang/String;\s*
+      - move-result-object ([vp]\d+)
