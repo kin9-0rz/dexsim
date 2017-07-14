@@ -46,8 +46,6 @@ class TEMPLET(Plugin):
 
     def __process(self, args, reg):
         p = re.compile(reg)
-        if self.tname != 'byte_arr_sget':
-            return
 
         self.json_list = []
         for mtd in self.methods:
