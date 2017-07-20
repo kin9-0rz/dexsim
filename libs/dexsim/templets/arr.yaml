@@ -1,26 +1,26 @@
 # decode int
 -  int_arr:
-    enabled: 1
+    enabled: 0
     args: \[I
-    reg:
+    pattern:
       - new-array [vp]\d+, [vp]\d+, \[I\s*
       - fill-array-data [vp]\d+, :array_[\w\d]+\s*
       - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(\[I\))
       - Ljava/lang/String;\s*
       - move-result-object ([vp]\d+)
 -  byte_arr:
-    enabled: 1
+    enabled: 0
     args: \[B
-    reg:
+    pattern:
       - new-array [vp]\d+, [vp]\d+, \[B\s*
       - fill-array-data [vp]\d+, :array_[\w\d]+\s*
       - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(\[B\))
       - Ljava/lang/String;\s*
       - move-result-object ([vp]\d+)
 -  byte_arr_sget:
-    enabled: 1
+    enabled: 0
     args: \[B
-    reg:
+    pattern:
       - sget-object (v\d+), (.+)\s*
       - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(\[B\))
       - Ljava/lang/String;\s*

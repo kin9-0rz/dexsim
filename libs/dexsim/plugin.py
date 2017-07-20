@@ -39,6 +39,8 @@ class Plugin(object):
     # fill-array-data v1, :array_4e
     FILL_ARRAY_DATA = 'fill-array-data [vp]\d+, :array_[\w\d]+\s+'
 
+    ARRAY_DATA_PATTERN = r':array_[\w\d]+\s*.array-data[\w\W\s]+.end array-data'
+
     # 保存需要解密的类名、方法、参数 [{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
     json_list = []
     # 目标上下文，解密后用于替换
@@ -51,31 +53,6 @@ class Plugin(object):
         self.driver = driver
         self.methods = methods
         self.smali_files = smali_files
-
-    def convert_type(self, _type, data):
-        arg = []
-        if _type == 'B':
-            return 'B:' + str(eval(data.strip()))
-
-        if _type == 'I':
-            return 'I:' + str(eval(data.strip()))
-
-        if _type == 'C':
-            return 'C:' + str(eval(data.strip()))
-
-        if _type == 'J':
-            return 'J:' + str(eval(data.strip()))
-
-        if _type == 'D':
-            pass
-
-        if _type == 'F':
-            pass
-
-        if _type == 'Ljava/lang/String;':
-            for item in data.encode("UTF-8"):
-                arg.append(item)
-            return "java.lang.String:" + str(arg)
 
     def get_invoke_pattern(self, args):
         '''
@@ -116,13 +93,13 @@ class Plugin(object):
         pass
 
     def get_arguments_from_clinit(self, field):
-        reg = '([\w\W]+?)sput-object (v\d+), %s' % re.escape(field)
-        sput_obj_ptn = re.compile(reg)
+        supt_obj_ptn = '([\w\W]+?)sput-object (v\d+), %s' % re.escape(field)
+        sput_obj_prog = re.compile(supt_obj_ptn)
 
         from smaliemu.emulator import Emulator
         emu = Emulator()
 
-        array_data_ptn = re.compile(r':array_[\w\d]+\s*.array-data[\w\W\s]+.end array-data')
+        arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
 
 
         class_name = field.split('->')[0]
@@ -131,21 +108,17 @@ class Plugin(object):
                 for mtd in sf.methods:
                     arr = []
                     if mtd.name == '<clinit>':
-                        matchs = sput_obj_ptn.search(mtd.body).groups()
+                        matchs = sput_obj_prog.search(mtd.body).groups()
                         snippet = matchs[0]
                         code_content = matchs[0]
-                        array_data_context = re.split(r'\n+', array_data_ptn.search(mtd.body).group())
-                        # print(array_data_context)
 
                         return_register_name = matchs[1]
                         arr = re.split(r'\n+', snippet)[:-1]
                         arr.append('return-object %s' % return_register_name)
-                        arr.extend(array_data_context)
-                        # print(arr)
-                        # raise Exception
-
-
-
+                        result = arr_data_prog.search(mtd.body)
+                        if result:
+                            array_data_content = re.split(r'\n+', result.group())
+                            arr.extend(array_data_content)
 
                         try:
                             # TODO 默认异常停止，这种情况可以考虑，全部跑一遍。
@@ -190,9 +163,9 @@ class Plugin(object):
 
             result = ptn2.search(mtd_body)
             if result:
-                array_data_context = result.group()
+                array_data_content = result.group()
                 byte_arr = []
-                for item in array_data_context.split()[3:-2]:
+                for item in array_data_content.split()[3:-2]:
                     byte_arr.append(eval(item[:-1]))
                 arguments.append(proto + ':' + str(byte_arr))
         elif proto == '[I':
@@ -202,39 +175,26 @@ class Plugin(object):
 
             result = ptn2.search(mtd_body)
             if result:
-                array_data_context = result.group()
+                array_data_content = result.group()
                 byte_arr = []
-                for item in array_data_context.split()[3:-2]:
+                for item in array_data_content.split()[3:-2]:
                     byte_arr.append(eval(item))
                 arguments.append(proto + ':' + str(byte_arr))
         elif proto == 'java.lang.String':
-            # print(line)
             ptn = re.compile(r'\"(.*?)\"')
             result = ptn.findall(line)
 
 
             import unicodedata
-            # print(dir(unicodedata))
             import binascii
             for item in result:
                 args = []
-                # # print('-' * 10)
-
                 import codecs
                 item = codecs.getdecoder('unicode_escape')(item)[0]
 
-                # if '\\u' in item:
-                #     print(item)
-                #     item = item.encode('UTF-8').decode('unicode_escape')
-                # print(type(x))
-                # print([ord(i) for i in x])
-                # for i in x.encode("UTF-8"):
-                #     print(i, end=' ')
-                #     args.append(i)
-
                 for i in item.encode("UTF-8"):
                     args.append(i)
-                # print([ord(i) for i in item])
+                # ([ord(i) for i in item])
                 arguments.append("java.lang.String:" + str(args))
             # raise Exception()
         elif proto in ['I', 'II', 'III']:
@@ -264,7 +224,20 @@ class Plugin(object):
             添加到json_list, target_contexts
         '''
         mid = json_item['id']
-        new_content = '\n\n    const-string %s, ' % return_variable_name
+        if return_variable_name:
+            new_content = '\n\n    const-string %s, ' % return_variable_name + '%s'
+        else:
+            # const-string v0, "Dexsim"
+            # const-string v1, "Decode String"
+            # invoke-static {v0, v1}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
+
+            new_content = (
+                    '\n    const-string v0, "Dexsim"\n'
+                    '    const-string v1, %s\n'
+                    '    invoke-static {v0, v1}, '
+                    'Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I\n'
+            )
+
         if mid not in self.target_contexts.keys():
             self.target_contexts[mid] = [(mtd, old_content, new_content)]
         else:
@@ -311,12 +284,14 @@ class Plugin(object):
                 for item in self.target_contexts[key]:
                     old_body = item[0].body
                     old_content = item[1]
-                    new_content = item[2] + outputs[key][1]
+                    new_content = item[2] % outputs[key][1]
 
                     # It's not a string.
                     if 'null' == outputs[key][1]:
                         continue
 
+                    # 这里替换的时候，注意，因为是没有行数，所以，把相同的方法都替换了
+                    # ID虽然不一样，但是，替换的内容一模一样
                     item[0].body = old_body.replace(old_content, new_content)
                     item[0].modified = True
                     self.make_changes = True
@@ -340,8 +315,6 @@ class Plugin(object):
             fp.write(jsons)
         outputs = self.driver.decode(fp.name)
         os.unlink(fp.name)
-
-        # print(outputs)
 
         # 替换内存
         # output 存放的是解密后的结果。

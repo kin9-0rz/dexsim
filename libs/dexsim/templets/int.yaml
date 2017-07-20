@@ -1,28 +1,23 @@
 # decode int
+# 正则表达式的写法，分组的时候，需要返回 - 寄存器、类名、方法名、参数/proto
+# invoke-static {v1, v2, v5}, Lcom/skt/pig/UserInterface;->a(III)Ljava/lang/String;
+# ('v1', 'v2', 'v5', 'Lcom/skt/pig/UserInterface', 'a', 'III')
+
 -  int1:
-    enabled: 1
+    enabled: 0
     args: I
-    reg:
-      - const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s*
-      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(I\))
+    pattern:
+      - invoke-static[/\s\w]+\{(v\d+)},\s+([^;]+?);->(.*?)\((.*?)\)
       - Ljava/lang/String;\s*
-      - move-result-object ([vp]\d+)
 -  int2:
-    enabled: 1
+    enabled: 0
     args: I
-    reg:
-      - const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s*
-      - const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s*
-      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(II\))
+    pattern:
+      - invoke-static[/\s\w]+\{(v\d+), (v\d+)},\s+([^;]+?);->(.*?)\((.*?)\)
       - Ljava/lang/String;\s*
-      - move-result-object ([vp]\d+)
 -  int3:
-    enabled: 1
+    enabled: 0
     args: I
-    reg:
-      - const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s*
-      - const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s*
-      - const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s*
-      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(III\))
+    pattern:
+      - invoke-static[/\s\w]+\{(v\d+), (v\d+), (v\d+)\},\s+([^;]+?);->(.*?)\((III)\)
       - Ljava/lang/String;\s*
-      - move-result-object ([vp]\d+)
