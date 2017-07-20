@@ -2,11 +2,9 @@
 -  str1:
     enabled: 1
     args: java.lang.String
-    reg:
-      - const-string [vp]\d+, "(.*?)".*\s*
-      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(Ljava/lang/String;\))
+    pattern:
+      - invoke-static[/\s\w]+\{(v\d+)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;)\)
       - Ljava/lang/String;\s*
-      - move-result-object ([vp]\d+)
     comment:
       - const-string v3, "encoded string"
       - invoke-static {v3}, La/b/c;->decrypt(Ljava/lang/String;)Ljava/lang/String;
@@ -16,16 +14,13 @@
 - str2:
     enabled: 1
     args: java.lang.String
-    reg:
-      - const-string [vp]\d+, "(.*?)".*\s*
-      - const-string [vp]\d+, "(.*?)".*\s*
-      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(Ljava/lang/String;Ljava/lang/String;\))
+    pattern:
+      - invoke-static[/\s\w]+\{(v\d+), (v\d+)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;Ljava/lang/String;)\)
       - Ljava/lang/String;\s*
-      - move-result-object ([vp]\d+)
 - str3:
-    enabled: 1
+    enabled: 0
     args: java.lang.String
-    reg:
+    pattern:
       - const-string [vp]\d+, "(.*?)".*\s*
       - const-string [vp]\d+, "(.*?)".*\s*
       - const-string [vp]\d+, "(.*?)".*\s*

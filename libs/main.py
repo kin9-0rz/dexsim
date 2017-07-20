@@ -119,7 +119,7 @@ def dexsim_dex(dex_file, smali_tempdir, include_str, output_dex):
             smali(smali_tempdir, output_dex)
         else:
             smali(smali_tempdir, os.path.splitext(os.path.basename(dex_file))[0] + '.sim.dex')
-        shutil.rmtree(smali_tempdir)
+        # shutil.rmtree(smali_tempdir)
 
 
 if __name__ == "__main__":

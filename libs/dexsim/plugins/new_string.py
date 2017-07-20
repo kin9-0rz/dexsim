@@ -43,19 +43,19 @@ class NEW_STRING(Plugin):
 
             # TODO 初始化 array-data 所有的数组
             fill_array_datas = {}
-            array_re = r'(array_[\w\d]+)\s*\.array-data[\w\s]+.end array-data$'
-            ptn1 = re.compile(array_re)
+            # array_re = r'(array_[\w\d]+)\s*\.array-data[\w\s]+.end array-data$'
+            arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
 
             flag = False
             new_body = []
             array_key = None
 
-            new_string_re = r'invoke-direct {(v\d+), v\d+}, Ljava/lang/String;-><init>\([\[BCI]+\)V'
-            ptn2 = re.compile(new_string_re)
+            new_str_ptn = r'invoke-direct {(v\d+), v\d+}, Ljava/lang/String;-><init>\([\[BCI]+\)V'
+            new_str_prog = re.compile(new_str_ptn)
             for line in re.split(r'\n+', mtd.body):
                 new_line = None
                 if 'Ljava/lang/String;-><init>' in line:
-                    result = ptn2.search(line)
+                    result = new_str_prog.search(line)
                     if not result:
                         new_body.append(line)
                         continue
@@ -63,14 +63,16 @@ class NEW_STRING(Plugin):
 
                     tmp = new_body.copy()
                     tmp.append(line)
-                    try:
-                        tmp.append('return-object %s' % return_register_name)
-                        decoded_string = (self.emu.call(tmp))
-                        if decoded_string:
-                            new_line = 'const-string %s, "%s"' % (return_register_name, decoded_string)
-                    except Exception as e:
-                        # TODO log2file
-                        pass
+                    tmp.append('return-object %s' % return_register_name)
+
+                    result = arr_data_prog.search(mtd.body)
+                    if result:
+                        array_data_content = re.split(r'\n+', result.group())
+                        tmp.extend(array_data_content)
+
+                    decoded_string = (self.emu.call(tmp, thrown=False))
+                    if decoded_string:
+                        new_line = 'const-string %s, "%s"' % (return_register_name, decoded_string)
 
                 if new_line:
                     flag = True
@@ -87,7 +89,7 @@ class NEW_STRING(Plugin):
 
     def __process_to_string_builder(self):
         to_string_re = (r'new-instance v\d+, Ljava/lang/StringBuilder;[\w\W\s]+?{(v\d+)[.\sv\d]*}, Ljava/lang/StringBuilder;->toString\(\)Ljava/lang/String;')
-        ptn2 = re.compile(to_string_re)
+        prog3 = re.compile(to_string_re)
         for mtd in self.methods:
 
             if 'const-string' not in mtd.body:
@@ -100,7 +102,7 @@ class NEW_STRING(Plugin):
             flag = False
             new_content = None
 
-            result = ptn2.finditer(mtd.body)
+            result = prog3.finditer(mtd.body)
 
             for item in result:
                 return_register_name = item.groups()[0]
@@ -132,7 +134,7 @@ class NEW_STRING(Plugin):
 
     def __process_to_string_buffer(self):
         to_string_re = (r'new-instance v\d+, Ljava/lang/StringBuffer;[\w\W\s]+?{(v\d+)[.\sv\d]*}, Ljava/lang/StringBuffer;->toString\(\)Ljava/lang/String;')
-        ptn2 = re.compile(to_string_re)
+        prog3 = re.compile(to_string_re)
         for mtd in self.methods:
 
             if 'const-string' not in mtd.body:
@@ -145,7 +147,7 @@ class NEW_STRING(Plugin):
             flag = False
             new_content = None
 
-            result = ptn2.finditer(mtd.body)
+            result = prog3.finditer(mtd.body)
 
             for item in result:
                 return_register_name = item.groups()[0]
