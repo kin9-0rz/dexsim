@@ -47,6 +47,8 @@ class Plugin(object):
     target_contexts = {}
     # 保存参数:array_的内容？有必要么？ sget可能会重复获取
     data_arraies = {}
+    # 保存已更新的smali方法列表
+    smali_mtd_updated_set = set()
 
     def __init__(self, driver, methods, smali_files):
         self.make_changes = False
@@ -121,8 +123,6 @@ class Plugin(object):
                             arr.extend(array_data_content)
 
                         try:
-                            # TODO 默认异常停止，这种情况可以考虑，全部跑一遍。
-                            # 因为有可能参数声明的时候，位置错位，还有可能是寄存器复用。
                             arr_data = emu.call(arr, thrown=True)
                             if len(emu.vm.exceptions) > 0:
                                 break
@@ -225,16 +225,16 @@ class Plugin(object):
         '''
         mid = json_item['id']
         if return_variable_name:
-            new_content = '\n\n    const-string %s, ' % return_variable_name + '%s'
+            new_content = 'const-string %s, ' % return_variable_name + '%s'
         else:
             # const-string v0, "Dexsim"
             # const-string v1, "Decode String"
             # invoke-static {v0, v1}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
 
             new_content = (
-                    '\n    const-string v0, "Dexsim"\n'
-                    '    const-string v1, %s\n'
-                    '    invoke-static {v0, v1}, '
+                    'const-string v0, "Dexsim"\n'
+                    'const-string v1, %s\n'
+                    'invoke-static {v0, v1}, '
                     'Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I\n'
             )
 
@@ -247,9 +247,6 @@ class Plugin(object):
             self.json_list.append(json_item)
 
     def run(self):
-        '''
-            匹配代码，生成指定格式的文件(包含类名、方法、参数)
-        '''
         pass
 
     def get_types(self, proto):
@@ -273,10 +270,11 @@ class Plugin(object):
         outputs = self.driver.decode(fp.name)
         os.unlink(fp.name)
 
+        # print(outputs)
+
         # 替换内存
         # output 存放的是解密后的结果。
         for key in outputs:
-            # TODO 替换的时候，仍然需要确认
             if 'success' in outputs[key]:
                 if key not in self.target_contexts.keys():
                     print('not found', key)
@@ -291,11 +289,18 @@ class Plugin(object):
                     if 'null' == outputs[key][1]:
                         continue
 
+                    # print(old_content)
+                    # print(new_content)
+
                     # 这里替换的时候，注意，因为是没有行数，所以，把相同的方法都替换了
                     # ID虽然不一样，但是，替换的内容一模一样
                     item[0].body = old_body.replace(old_content, new_content)
                     item[0].modified = True
                     self.make_changes = True
+
+                    # 记录替换成功的smali方法，最终解密完全停止后，
+                    # oracle.divine 会获取到这个列表，并且对其进行更新
+                    self.smali_mtd_updated_set.add(item[0].descriptor)
 
         self.smali_files_update()
 

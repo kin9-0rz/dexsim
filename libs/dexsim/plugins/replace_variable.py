@@ -13,8 +13,8 @@ __all__ = ["ReplaceVariable"]
 class ReplaceVariable(Plugin):
 
     name = "ReplaceVariable"
-    version = '0.0.2'
-    enabled = True
+    desc = "替换变量"
+    enabled = False
 
     def __init__(self, driver, methods, smali_files):
         Plugin.__init__(self, driver, methods, smali_files)
