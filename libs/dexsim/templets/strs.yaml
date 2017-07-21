@@ -12,7 +12,7 @@
       - ->
       - const-string v4, "decoded string"
 - str2:
-    enabled: 1
+    enabled: 0
     args: java.lang.String
     pattern:
       - invoke-static[/\s\w]+\{(v\d+), (v\d+)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;Ljava/lang/String;)\)

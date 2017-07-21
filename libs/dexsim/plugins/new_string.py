@@ -16,8 +16,8 @@ __all__ = ["NEW_STRING"]
 class NEW_STRING(Plugin):
 
     name = "NEW_STRING"
-    version = '0.0.3'
-    enabled = True
+    enabled = False
+    desc = '处理那些常规字符串操作'
 
     def __init__(self, driver, methods, smali_files):
         self.emu = Emulator()
@@ -41,9 +41,7 @@ class NEW_STRING(Plugin):
             if 'Ljava/lang/String;-><init>([B)V' not in mtd.body:
                 continue
 
-            # TODO 初始化 array-data 所有的数组
             fill_array_datas = {}
-            # array_re = r'(array_[\w\d]+)\s*\.array-data[\w\s]+.end array-data$'
             arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
 
             flag = False

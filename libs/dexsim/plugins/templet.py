@@ -15,7 +15,7 @@ __all__ = ["TEMPLET"]
 class TEMPLET(Plugin):
 
     name = "TEMPLET"
-    version = '0.0.3'
+    desc = '通过加载模板，自动解密'
     enabled = True
     tname = None
 
@@ -23,7 +23,6 @@ class TEMPLET(Plugin):
         Plugin.__init__(self, driver, methods, smali_files)
         from smaliemu.emulator import Emulator
         self.emu = Emulator()
-
 
     def run(self):
         print('run Plugin: %s' % self.name, end=' -> ')
@@ -85,6 +84,7 @@ class TEMPLET(Plugin):
         flag = False
         # 存放解密对象
         self.json_list = []
+        self.target_contexts = {}
 
         for mtd in self.methods:
             register = {}
@@ -93,7 +93,7 @@ class TEMPLET(Plugin):
             if not result:
                 continue
 
-            lines = re.split(r'\n', mtd.body)
+            lines = re.split(r'\n\s*', mtd.body)
 
             tmp_bodies = lines.copy()
 
@@ -111,19 +111,20 @@ class TEMPLET(Plugin):
                 # 如果已获取解密类名、方法、参数
                 if flag:
                     # 尝试获取返回存放的寄存器，如果没有则
-                    res = move_result_obj_prog.match(line)
+                    res = move_result_obj_prog.search(line)
+                    # print(res, line)
                     if res:
+                        # print(res)
                         rtn_name = res.groups()[0]
-                        self.append_json_item(json_item, mtd, old_content, rtn_name, old_content_bak)
+                        self.append_json_item(json_item, mtd, old_content, rtn_name)
                         flag = False
                         arguments = []
                         cls_name = None
                         mtd_name = None
-
                         continue
                     else:
                         # 如果没有返回值的情况，则默认替换打印数据
-                        self.append_json_item(json_item, mtd, old_content, None, old_content_bak)
+                        self.append_json_item(json_item, mtd, old_content, None)
 
                         flag = False
                         arguments = []
@@ -161,19 +162,22 @@ class TEMPLET(Plugin):
                             json_item = self.get_json_item(cls_name, mtd_name, arguments)
                             count += 1
                             line_number = counter
-                            # 使目标替换位置变得唯一，否则没办法进行替换
-                            # TODO 这里会存在一个问题，那就是如果解密失败的情况下 —— 这一行原始代码会丢失
-                            # 需要备份
-                            # 解密失败的情况，则把原来的内容替换回去
-                            # NOTE 注意，这仅仅是内存里面的修改，如果解密失败的情况，内存中的内容不会写入文件
-                            old_content_bak = line
+
+                            # 使目标替换位置变得唯一，保证替换的唯一性
+                            #（同样的解密方法、参数，拥有一样的ID）
+                            # 仅仅是内存里面的修改，如果解密失败的情况，内存中的内容不会写入文件
+                            # NOTE 仍然不可能避免，同一个方法，一处解密成功，外一处解密失败，
+                            # 导致写入文件的情况
                             old_content = '# %s' % json_item['id']
                             tmp_bodies[line_number] = old_content
                         except:
-                            # TODO 需要修复
+                            # TODO 可能需要处理
+                            print('-' * 80)
+                            print('ERROR：参数转换异常')
                             print(mtd.descriptor)
                             print(result_mtd.groups())
                             print(register)
+                            print('-' * 80)
                             break
                     except KeyError:
                         arguments = []
