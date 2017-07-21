@@ -15,7 +15,7 @@ __all__ = ["TEMPLET"]
 class TEMPLET(Plugin):
 
     name = "TEMPLET"
-    version = '0.0.1'
+    version = '0.0.3'
     enabled = True
     tname = None
 
@@ -101,6 +101,7 @@ class TEMPLET(Plugin):
             mtd_name = None
             arguments = []
             old_content = None
+            old_content_bak = None
 
             line_number = 0
             counter = -1
@@ -113,7 +114,7 @@ class TEMPLET(Plugin):
                     res = move_result_obj_prog.match(line)
                     if res:
                         rtn_name = res.groups()[0]
-                        self.append_json_item(json_item, mtd, old_content, rtn_name)
+                        self.append_json_item(json_item, mtd, old_content, rtn_name, old_content_bak)
                         flag = False
                         arguments = []
                         cls_name = None
@@ -122,7 +123,7 @@ class TEMPLET(Plugin):
                         continue
                     else:
                         # 如果没有返回值的情况，则默认替换打印数据
-                        self.append_json_item(json_item, mtd, old_content, None)
+                        self.append_json_item(json_item, mtd, old_content, None, old_content_bak)
 
                         flag = False
                         arguments = []
@@ -160,6 +161,12 @@ class TEMPLET(Plugin):
                             json_item = self.get_json_item(cls_name, mtd_name, arguments)
                             count += 1
                             line_number = counter
+                            # 使目标替换位置变得唯一，否则没办法进行替换
+                            # TODO 这里会存在一个问题，那就是如果解密失败的情况下 —— 这一行原始代码会丢失
+                            # 需要备份
+                            # 解密失败的情况，则把原来的内容替换回去
+                            # NOTE 注意，这仅仅是内存里面的修改，如果解密失败的情况，内存中的内容不会写入文件
+                            old_content_bak = line
                             old_content = '# %s' % json_item['id']
                             tmp_bodies[line_number] = old_content
                         except:
