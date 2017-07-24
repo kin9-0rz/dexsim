@@ -4,20 +4,20 @@
 # ('v1', 'v2', 'v5', 'Lcom/skt/pig/UserInterface', 'a', 'III')
 
 -  int1:
-    enabled: 0
+    enabled: 1
     args: I
     pattern:
-      - invoke-static[/\s\w]+\{(v\d+)},\s+([^;]+?);->(.*?)\((.*?)\)
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((I)\)
       - Ljava/lang/String;\s*
 -  int2:
-    enabled: 0
+    enabled: 1
     args: I
     pattern:
-      - invoke-static[/\s\w]+\{(v\d+), (v\d+)},\s+([^;]+?);->(.*?)\((.*?)\)
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((II)\)
       - Ljava/lang/String;\s*
 -  int3:
-    enabled: 0
+    enabled: 1
     args: I
     pattern:
-      - invoke-static[/\s\w]+\{(v\d+), (v\d+), (v\d+)\},\s+([^;]+?);->(.*?)\((III)\)
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((III)\)
       - Ljava/lang/String;\s*

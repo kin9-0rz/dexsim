@@ -3,7 +3,7 @@
     enabled: 1
     args: java.lang.String
     pattern:
-      - invoke-static[/\s\w]+\{(v\d+)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;)\)
+      - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;)\)
       - Ljava/lang/String;\s*
     comment:
       - const-string v3, "encoded string"
@@ -12,18 +12,16 @@
       - ->
       - const-string v4, "decoded string"
 - str2:
-    enabled: 0
+    enabled: 1
     args: java.lang.String
     pattern:
-      - invoke-static[/\s\w]+\{(v\d+), (v\d+)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;Ljava/lang/String;)\)
+      - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;Ljava/lang/String;)\)
       - Ljava/lang/String;\s*
 - str3:
-    enabled: 0
+    enabled: 1
     args: java.lang.String
     pattern:
-      - const-string [vp]\d+, "(.*?)".*\s*
-      - const-string [vp]\d+, "(.*?)".*\s*
-      - const-string [vp]\d+, "(.*?)".*\s*
-      - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\))
+      - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->
+      - ([^\(]+)\((Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)\)
       - Ljava/lang/String;\s*
-      - move-result-object ([vp]\d+)
+    comment: invoke-static/range {v14 .. v16},
