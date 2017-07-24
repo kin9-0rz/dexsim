@@ -12,7 +12,9 @@ from adbwrapper import ADB
 class Driver:
     def __init__(self):
         self.adb = ADB()
-        self.cmd_stub = ['export', 'CLASSPATH=/data/local/od.zip;', 'app_process', '/system/bin', 'org.cf.oracle.Driver', '@/data/local/od-targets.json;']
+        self.cmd_stub = ['export', 'CLASSPATH=/data/local/od.zip;',
+            'app_process', '/system/bin', 'org.cf.oracle.Driver',
+            '@/data/local/od-targets.json;']
 
     def install(self, target_dex):
         '''

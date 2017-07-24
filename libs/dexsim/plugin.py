@@ -223,6 +223,7 @@ class Plugin(object):
         '''
             添加到json_list, target_contexts
         '''
+        # 解密的值一样，但是，替换的内容不一定一样，因为返回值寄存器不一样
         mid = json_item['id']
         if return_variable_name:
             new_content = 'const-string %s, ' % return_variable_name + '%s'
@@ -285,12 +286,21 @@ class Plugin(object):
                     old_content = item[1]
                     new_content = item[2] % outputs[key][1]
 
+                    if 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' in outputs[key][1]:
+                        print(old_content)
+                        print(item[2])
+
                     # It's not a string.
                     if 'null' == outputs[key][1]:
                         continue
 
-                    # print(old_content)
-                    # print(new_content)
+                    # if True:
+                    #     # print(old_body)
+                    #     print('-' * 80)
+                    #     print(old_content)
+                    #     print('>' * 80)
+                    #     print(new_content)
+                    #     print('=' * 80)
 
                     # 这里替换的时候，注意，因为是没有行数，所以，把相同的方法都替换了
                     # ID虽然不一样，但是，替换的内容一模一样

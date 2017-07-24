@@ -97,24 +97,37 @@ def main(args):
         apk_path = args.f
 
         # 反编译所有的classes\d.dex文件
-        tempdir = tempfile.mkdtemp()
-        smali_dir = tempfile.mkdtemp()
+        if DEBUG:
+            tempdir = 'clztmp'
+            if os.path.exists(tempdir):
+                os.mkdir(tempdir)
+        else:
+            tempdir = tempfile.mkdtemp()
+
+        # smali_dir = tempfile.mkdtemp()
 
         import re
         ptn = re.compile(r'classes\d*.dex')
+
+        print(tempdir)
 
         import zipfile
         zipFile = zipfile.ZipFile(apk_path)
         for item in zipFile.namelist():
             if ptn.match(item):
+                print(item)
                 output_path = zipFile.extract(item, tempdir)
                 baksmali(output_path, smali_dir)
         zipFile.close()
 
         # 回编译为临时的dex文件
         target_dex = os.path.join(tempdir, 'new.dex')
+
+        print(target_dex)
+
         smali(smali_dir, target_dex)
-        shutil.rmtree(tempdir)
+        if DEBUG:
+            shutil.rmtree(tempdir)
     else:
         dex_file = os.path.basename(args.f)
         baksmali(dex_file, smali_dir)

@@ -48,6 +48,7 @@ class Oracle:
         plugins = self.plugin_manager.get_plugins()
 
         flag = True
+        # 存放所有解密成功的方法
         smali_mtds = set()
         while flag:
             flag = False
@@ -58,63 +59,28 @@ class Oracle:
                 flag = flag | plugin.make_changes
                 plugin.make_changes = False
 
-        return
+        ptn1 = r'const-string (v\d+), ".*?"\s*(const-string (v\d+), ".*?"\s*)'
+        prog1 = re.compile(ptn1)
 
-        line_queue = Queue(maxsize = 4)
-        command_set = set()
-
-        const_ptn = r'(const.*?),.*$'
-        const_prog = re.compile(const_ptn)
-
-        # 如果上一行是const，而下一行是move-result-object，则删除
-        flag = False
-        start = 0
-        end = 0
-        move_line = None
+        ptn2 = r'(const-string v\d+, ".*?"\s*)+move-result-object v\d+'
+        prog2 = re.compile(ptn2)
 
         for smali_file in self.smali_files:
             for mtd in smali_file.methods:
+                #  仅仅匹配解密成功的方法
                 if mtd.descriptor in smali_mtds:
-                    body_tmp = mtd.body
-                    lines = re.split(r'\n', mtd.body)
-                    lines_copy = lines.copy()
-                    lines.reverse()
+                    results = prog2.finditer(mtd.body)
+                    for item in results:
+                        arr = item.groups()
+                        mtd.body = mtd.body.replace(item.group(), arr[0])
+                        mtd.modified = True
 
-                    counter = 0
-                    for line in lines:
-                        counter += 1
+                    results = prog1.finditer(mtd.body)
+                    for item in results:
+                        arr = item.groups()
+                        if arr[0] == arr[2]:
+                            mtd.body = mtd.body.replace(item.group(), arr[1])
+                            mtd.modified = True
 
-                        print(counter, bytearray(line, encoding='utf-8'))
-
-                        if 'move-result-object' in line:
-                            if lines[counter].startswith('const-string'):
-                                print('>' * 80)
-                                if line in lines_copy:
-                                    print('???')
-                                    print(bytearray(lines_copy[len(lines_copy)-counter], encoding='utf-8'))
-                                    del lines_copy[len(lines_copy)-counter]
-                                    print(bytearray(lines_copy[len(lines_copy)-counter], encoding='utf-8'))
-                                    print('???')
-                                # lines_copy.remove(line)
-                            continue
-
-                        results = const_prog.findall(line)
-                        if not results:
-                            continue
-                        command = results[0]
-                        if command in command_set:
-                            lines_copy.remove(line)
-                        if line_queue.full():
-                            item = line_queue.get()
-                            # 删除不必要的const语句（即解密参数）
-                            if item in command_set:
-                                command_set.remove(item)
-                        line_queue.put(command)
-                        command_set.add(command)
-
-                    line_queue.queue.clear()
-                    command_set.clear()
-                    mtd.body = '\n'.join(lines_copy)
-                    mtd.modified = True
 
             smali_file.update()

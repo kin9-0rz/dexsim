@@ -68,7 +68,6 @@ class TEMPLET(Plugin):
 
     def __process(self, args, pattern):
         templet_prog = re.compile(pattern)
-        print(pattern)
 
         v_prog = re.compile(r'(v\d+),')
         # const_ptn = r'const/\d+ (v\d+), (0x[\d\w]*)t?'
@@ -112,11 +111,13 @@ class TEMPLET(Plugin):
                 if flag:
                     # 尝试获取返回存放的寄存器，如果没有则
                     res = move_result_obj_prog.search(line)
-                    # print(res, line)
                     if res:
-                        # print(res)
                         rtn_name = res.groups()[0]
+                        # 解密的内容一样，但是，返回值寄存器未必一样（保证替换的惟一性）
+                        old_content = old_content + '_' + rtn_name + 'X'
+                        tmp_bodies[line_number] = old_content
                         self.append_json_item(json_item, mtd, old_content, rtn_name)
+
                         flag = False
                         arguments = []
                         cls_name = None
@@ -145,18 +146,30 @@ class TEMPLET(Plugin):
                 if not result_mtd:
                     continue
 
-                cls_name = result_mtd.groups()[-3][1:].replace('/', '.')
-                mtd_name = result_mtd.groups()[-2]
-                proto = result_mtd.groups()[-1]
+                mtd_groups = result_mtd.groups()
+                cls_name = mtd_groups[-3][1:].replace('/', '.')
+                mtd_name = mtd_groups[-2]
+                proto = mtd_groups[-1]
+
+                # 保存参数寄存器的名字 如，v10
+                register_names = []
+                #  invoke-static {v14, v16},
+                if 'range' not in line:
+                    register_names.extend(mtd_groups[0].split(', '))
+                elif 'range' in line:
+                    # invoke-static/range {v14 .. v16}
+                    start, end = re.match(r'v(\d+).*?(\d+)', mtd_groups[0]).groups()
+                    for rindex in range(int(start), int(end) + 1):
+                        register_names.append('v' + str(rindex))
 
                 # 生成arguments
                 # "arguments": ["I:198", "I:115", "I:26"]}
-
                 count = 0
                 for i in type_prog.finditer(proto):
                     arg_type = i.group()
                     try:
-                        value = register[result_mtd.groups()[count]]
+                        value = register[register_names[count]]
+
                         try:
                             arguments.append(self.convert_args(arg_type, value))
                             json_item = self.get_json_item(cls_name, mtd_name, arguments)
@@ -164,7 +177,6 @@ class TEMPLET(Plugin):
                             line_number = counter
 
                             # 使目标替换位置变得唯一，保证替换的唯一性
-                            #（同样的解密方法、参数，拥有一样的ID）
                             # 仅仅是内存里面的修改，如果解密失败的情况，内存中的内容不会写入文件
                             # NOTE 仍然不可能避免，同一个方法，一处解密成功，外一处解密失败，
                             # 导致写入文件的情况
