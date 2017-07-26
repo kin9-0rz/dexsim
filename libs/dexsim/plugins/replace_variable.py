@@ -1,8 +1,3 @@
-# coding:utf-8
-
-import sys
-import hashlib
-from json import JSONEncoder
 import re
 
 from libs.dexsim.plugin import Plugin
@@ -11,9 +6,7 @@ __all__ = ["ReplaceVariable"]
 
 
 class ReplaceVariable(Plugin):
-
     name = "ReplaceVariable"
-    desc = "替换变量"
     enabled = False
 
     def __init__(self, driver, methods, smali_files):
@@ -27,20 +20,24 @@ class ReplaceVariable(Plugin):
 
     def __process_string(self):
         '''
-            const-string v0, "string_value"
-            sput-object v0, Ltest/test/cls;->func:Ljava/lang/String;
+        const-string v0, "string_value"
+        sput-object v0, Ltest/test/cls;->func:Ljava/lang/String;
 
-            sget-object v3, Ltest/test/cls;->func:Ljava/lang/String;
-            invoke-virtual {v0, v3}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-            ==>
-            const-string v3, "string_value"
-            invoke-virtual {v0, v3}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+        sget-object v3, Ltest/test/cls;->func:Ljava/lang/String;
+
+        invoke-virtual {v0, v3}, Ljava/lang/StringBuilder;->
+        append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+        ==>
+        const-string v3, "string_value"
+
+        invoke-virtual {v0, v3}, Ljava/lang/StringBuilder;->
+        append(Ljava/lang/String;)Ljava/lang/StringBuilder;
         '''
+        SPUT_OBJECT = (r'sput-object [vp]\d+, L[\w\/\d;]+',
+                       r'->[\w]+:Ljava/lang/String;')
+        SGET_OBJECT = r'sget-object [vp]\d+, '
 
-        SPUT_OBJECT = 'sput-object [vp]\d+, L[\w\/\d;]+->[\w]+:Ljava/lang/String;'
-        SGET_OBJECT = 'sget-object [vp]\d+, '
-
-        p = re.compile('\s+' + self.CONST_STRING + '\s+' + SPUT_OBJECT)
+        p = re.compile(r'\s+' + self.CONST_STRING + r'\s+' + SPUT_OBJECT)
 
         fields = {}
         for mtd in self.methods:
@@ -51,7 +48,7 @@ class ReplaceVariable(Plugin):
                 end = line.rindex('"')
                 value = line[start:end + 1]
 
-                tp = re.compile('L[\w\/\d;]+->[\w]+:Ljava/lang/String;')
+                tp = re.compile(r'L[\w\/\d;]+->[\w]+:Ljava/lang/String;')
                 key = tp.search(line).group()
 
                 fields[key] = value
@@ -66,7 +63,9 @@ class ReplaceVariable(Plugin):
                     line = i.group()
                     old_content = line
                     new_content = line.replace(
-                        'sget-object', 'const-string').replace(key, fields[key])
+                        'sget-object', 'const-string').replace(key,
+                                                               fields[key])
+
                     mtd.body = mtd.body.replace(old_content, new_content)
                     mtd.modified = True
                     self.make_changes = True
@@ -78,16 +77,15 @@ class ReplaceVariable(Plugin):
             const/16 v0, 0xe2
             sput v0, Lcom/skt/pig/UserInterface;->f:I
 
-
             sget v3, Lcom/skt/pig/UserInterface;->f:
             ==>
             const/16 v3, 0xe2
         '''
 
-        SPUT = 'sput [vp]\d+, L[\w\/\d;]+->[\w]+:I'
-        SGET = 'sget [vp]\d+, '
+        SPUT = r'sput [vp]\d+, L[\w\/\d;]+->[\w]+:I'
+        SGET = r'sget [vp]\d+, '
 
-        p = re.compile('\s+' + self.CONST_NUMBER + '\s+' + SPUT)
+        p = re.compile(r'\s+' + self.CONST_NUMBER + r'\s+' + SPUT)
 
         fields = {}
         for mtd in self.methods:
@@ -101,10 +99,10 @@ class ReplaceVariable(Plugin):
 
                 fields[field_sign] = (opcode, value)
 
-        if len(fields) == 0:
+        if not fields:
             return
 
-        for key in fields.keys():
+        for key in fields:
             p2 = re.compile(SGET + key)
             for mtd in self.methods:
                 for i in p2.finditer(mtd.body):
@@ -114,11 +112,11 @@ class ReplaceVariable(Plugin):
                     value = fields[key][1]
                     idx = opcode_name.index('/')
 
-                    # smali const/4 vn, 0x1111，寄存器的范围只能是0~15.
-                    # 所以，如果n大于15的时候，则需要调整为const/16。
-                    wide = int(opcode_name[idx+1:])
+                    # smali const/4 vn, 0x1111，the range of register is 0~15.
+                    # if vn>v15, const/4 need to be changed to const/16.
+                    wide = int(opcode_name[idx + 1:])
                     if int(register[1:-1]) > 15 and wide == 4:
-                        opcode_name = opcode_name[:idx+1] + '16'
+                        opcode_name = opcode_name[:idx + 1] + '16'
 
                     new_content = opcode_name + ' ' + register + ' ' + value
                     old_content = line
@@ -131,10 +129,10 @@ class ReplaceVariable(Plugin):
 
     def __process_stringbuilder_init(self):
         '''
-
             const-string v3, "string1"
 
-            invoke-direct {v2, v3}, Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V
+            invoke-direct {v2, v3}, Ljava/lang/StringBuilder;-><init>
+                                                        (Ljava/lang/String;)V
 
             const-string v3, "_string2"
 
@@ -142,9 +140,12 @@ class ReplaceVariable(Plugin):
 
             const-string v3, "string1_string2"
         '''
-        INVOKE_DIRECT_STRING_BUILDER = 'invoke-direct \{[vp]\d+, [vp]\d+\}, Ljava/lang/StringBuilder;-><init>\(Ljava/lang/String;\)V'
 
-        p = re.compile('\s+' + self.CONST_STRING + '\s+' + INVOKE_DIRECT_STRING_BUILDER + '\s+' + self.CONST_STRING + '\s+')
+        ptn = ('invoke-direct \{[vp]\d+, [vp]\d+\}, '
+               'Ljava/lang/StringBuilder;-><init>\(Ljava/lang/String;\)V')
+
+        p = re.compile('\s+' + self.CONST_STRING + '\s+' + ptn + '\s+' +
+                       self.CONST_STRING + '\s+')
 
         for mtd in self.methods:
             for i in p.finditer(mtd.body):
