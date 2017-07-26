@@ -93,26 +93,24 @@ def main(args):
         else:
             smali_dir = args.f
         dex_file = smali(smali_dir, os.path.basename(smali_dir) + '.dex')
+        dexsim_dex(dex_file, smali_dir, include_str, output_dex)
     elif Magic(args.f).get_type() == 'apk':
         apk_path = args.f
 
-        # 反编译所有的classes\d.dex文件
         if DEBUG:
-            tempdir = 'clztmp'
-            if os.path.exists(tempdir):
+            tempdir = os.path.join(os.path.abspath(os.curdir), 'clztmp')
+            if not os.path.exists(tempdir):
                 os.mkdir(tempdir)
         else:
             tempdir = tempfile.mkdtemp()
 
-        # smali_dir = tempfile.mkdtemp()
-
         import re
         ptn = re.compile(r'classes\d*.dex')
 
-        print(tempdir)
-
         import zipfile
         zipFile = zipfile.ZipFile(apk_path)
+
+        # 反编译所有的classes\d.dex文件
         for item in zipFile.namelist():
             if ptn.match(item):
                 print(item)
@@ -121,29 +119,27 @@ def main(args):
         zipFile.close()
 
         # 回编译为临时的dex文件
-        target_dex = os.path.join(tempdir, 'new.dex')
+        dex_file = os.path.join(tempdir, 'new.dex')
 
-        print(target_dex)
-
-        smali(smali_dir, target_dex)
-        if DEBUG:
+        smali(smali_dir, dex_file)
+        dexsim_dex(dex_file, smali_dir, include_str, output_dex)
+        if not DEBUG:
             shutil.rmtree(tempdir)
     else:
         dex_file = os.path.basename(args.f)
         baksmali(dex_file, smali_dir)
-
-    dexsim_dex(dex_file, smali_dir, include_str, output_dex)
+        dexsim_dex(dex_file, smali_dir, include_str, output_dex)
 
 
 def dexsim_dex(dex_file, smali_dir, include_str, output_dex):
-        dexsim(dex_file, smali_dir, include_str)
-        if output_dex:
-            smali(smali_dir, output_dex)
-        else:
-            smali(smali_dir, os.path.splitext(os.path.basename(dex_file))[0] + '.sim.dex')
+    dexsim(dex_file, smali_dir, include_str)
+    if output_dex:
+        smali(smali_dir, output_dex)
+    else:
+        smali(smali_dir, os.path.splitext(os.path.basename(dex_file))[0] + '.sim.dex')
 
-        if not DEBUG:
-            shutil.rmtree(smali_dir)
+    if not DEBUG:
+        shutil.rmtree(smali_dir)
 
 
 if __name__ == "__main__":

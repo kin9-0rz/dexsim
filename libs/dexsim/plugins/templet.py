@@ -1,21 +1,15 @@
-# coding:utf-8
-
-import hashlib
-from json import JSONEncoder
 import re
 import os
 import yaml
 
 from libs.dexsim.plugin import Plugin
 
-
 __all__ = ["TEMPLET"]
 
 
 class TEMPLET(Plugin):
-
+    """Load templets to decode apk/dex."""
     name = "TEMPLET"
-    desc = '通过加载模板，自动解密'
     enabled = True
     tname = None
 
@@ -48,49 +42,90 @@ class TEMPLET(Plugin):
                         self.__process(args, ptn)
 
     def convert_args(self, typ8, value):
-        '''
-            根据参数类型和值，将其转换为json格式
-        '''
+        '''Convert the value of register/argument to json format.'''
         if typ8 == 'I':
             return 'I:' + str(value)
 
         if typ8 == 'Ljava/lang/String;':
-            import codecs
-            try:
-                item = codecs.getdecoder('unicode_escape')(value)[0]
-            except:
-                raise Exception
+            if not isinstance(value, str):
+                return None
 
+            import codecs
+            item = codecs.getdecoder('unicode_escape')(value)[0]
             args = []
             for i in item.encode("UTF-8"):
                 args.append(i)
             return "java.lang.String:" + str(args)
 
+        if typ8 == '[B':
+            byte_arr = []
+            for item in value:
+                if item == '':
+                    item = 0
+                byte_arr.append(item)
+            return '[B:' + str(byte_arr)
+
+        if typ8 == '[C':
+            byte_arr = []
+            for item in value:
+                if item == '':
+                    item = 0
+                byte_arr.append(item)
+            return '[C:' + str(byte_arr)
+
+        print(typ8)
+
+    def init_array_datas(self, body):
+        array_datas = {}
+
+        ptn2 = r'(:array_[\w\d]+)\s*.array-data[\w\W\s]+?.end array-data'
+        arr_data_prog = re.compile(ptn2)
+
+        for item in arr_data_prog.finditer(body):
+            array_data_content = re.split(r'\n\s*', item.group())
+            line = 'fill-array-data v0, %s' % item.groups()[0]
+            snippet = []
+            snippet.append(line)
+            snippet.append('return-object v0')
+            snippet.extend(array_data_content)
+            arr_data = self.emu.call(snippet)
+            array_datas[item.groups()[0]] = arr_data
+
+        return array_datas
+
     def __process(self, args, pattern):
         templet_prog = re.compile(pattern)
 
-        v_prog = re.compile(r'(v\d+),')
-        # const_ptn = r'const/\d+ (v\d+), (0x[\d\w]*)t?'
         const_ptn = r'const.*?(v\d+),.*'
-
         const_prog = re.compile(const_ptn)
+
+        file_array_data_ptn = r'fill-array-data (v\d+), (:array_[\d\w]+)'
+        file_array_data_prog = re.compile(file_array_data_ptn)
+
         move_result_obj_ptn = r'move-result-object ([vp]\d+)'
         move_result_obj_prog = re.compile(move_result_obj_ptn)
-        type_ptn = r'\[?(I|B|Ljava\/lang\/String;)'
+        type_ptn = r'\[?(I|B|C|Ljava\/lang\/String;)'
         type_prog = re.compile(type_ptn)
 
-        # 判断是否已获得解密函数的类名、方法
-        flag = False
-        # 存放解密对象
         self.json_list = []
         self.target_contexts = {}
 
+        argument_is_arr = False
+        if 'arr' in self.tname:
+            argument_is_arr = True
+
         for mtd in self.methods:
-            register = {}
+            registers = {}
+            array_datas = {}
 
             result = templet_prog.search(mtd.body)
             if not result:
                 continue
+
+            if argument_is_arr:
+                array_datas = self.init_array_datas(mtd.body)
+                if not array_datas:
+                    continue
 
             lines = re.split(r'\n\s*', mtd.body)
 
@@ -98,52 +133,34 @@ class TEMPLET(Plugin):
 
             cls_name = None
             mtd_name = None
-            arguments = []
             old_content = None
-            old_content_bak = None
 
-            line_number = 0
-            counter = -1
+            lidx = -1
             json_item = None
             for line in lines:
-                counter += 1
-                # 如果已获取解密类名、方法、参数
-                if flag:
-                    # 尝试获取返回存放的寄存器，如果没有则
-                    res = move_result_obj_prog.search(line)
-                    if res:
-                        rtn_name = res.groups()[0]
-                        # 解密的内容一样，但是，返回值寄存器未必一样（保证替换的惟一性）
-                        old_content = old_content + '_' + rtn_name + 'X'
-                        tmp_bodies[line_number] = old_content
-                        self.append_json_item(json_item, mtd, old_content, rtn_name)
+                lidx += 1
 
-                        flag = False
-                        arguments = []
-                        cls_name = None
-                        mtd_name = None
-                        continue
-                    else:
-                        # 如果没有返回值的情况，则默认替换打印数据
-                        self.append_json_item(json_item, mtd, old_content, None)
-
-                        flag = False
-                        arguments = []
-                        cls_name = None
-                        mtd_name = None
-                        pass
-
-                # 判断其是否有返回值
                 result = const_prog.search(line)
                 if result:
                     key = result.groups()[0]
                     return_line = 'return-object %s' % key
-                    register[key] = self.emu.call([line, return_line], thrown=False)
+                    registers[key] = self.emu.call([line, return_line],
+                                                   thrown=False)
                     continue
 
-                # 匹配解密模板
+                result = file_array_data_prog.search(line)
+                if result:
+                    register_name = result.groups()[0]
+                    array_data_name = result.groups()[1]
+                    if array_data_name in array_datas:
+                        registers[register_name] = array_datas[array_data_name]
+                    continue
+
                 result_mtd = templet_prog.search(line)
                 if not result_mtd:
+                    continue
+
+                if 'Ljava/lang/String;->valueOf(I)Ljava/lang/String' in line:
                     continue
 
                 mtd_groups = result_mtd.groups()
@@ -151,54 +168,53 @@ class TEMPLET(Plugin):
                 mtd_name = mtd_groups[-2]
                 proto = mtd_groups[-1]
 
-                # 保存参数寄存器的名字 如，v10
                 register_names = []
                 #  invoke-static {v14, v16},
                 if 'range' not in line:
                     register_names.extend(mtd_groups[0].split(', '))
                 elif 'range' in line:
                     # invoke-static/range {v14 .. v16}
-                    start, end = re.match(r'v(\d+).*?(\d+)', mtd_groups[0]).groups()
+                    start, end = re.match(r'v(\d+).*?(\d+)',
+                                          mtd_groups[0]).groups()
                     for rindex in range(int(start), int(end) + 1):
                         register_names.append('v' + str(rindex))
 
-                # 生成arguments
                 # "arguments": ["I:198", "I:115", "I:26"]}
-                count = 0
-                for i in type_prog.finditer(proto):
-                    arg_type = i.group()
-                    try:
-                        value = register[register_names[count]]
+                arguments = []
+                ridx = -1
+                for item in type_prog.finditer(proto):
+                    ridx += 1
+                    arg_type = item.group()
 
-                        try:
-                            arguments.append(self.convert_args(arg_type, value))
-                            json_item = self.get_json_item(cls_name, mtd_name, arguments)
-                            count += 1
-                            line_number = counter
-
-                            # 使目标替换位置变得唯一，保证替换的唯一性
-                            # 仅仅是内存里面的修改，如果解密失败的情况，内存中的内容不会写入文件
-                            # NOTE 仍然不可能避免，同一个方法，一处解密成功，外一处解密失败，
-                            # 导致写入文件的情况
-                            old_content = '# %s' % json_item['id']
-                            tmp_bodies[line_number] = old_content
-                        except:
-                            # TODO 可能需要处理
-                            print('-' * 80)
-                            print('ERROR：参数转换异常')
-                            print(mtd.descriptor)
-                            print(result_mtd.groups())
-                            print(register)
-                            print('-' * 80)
-                            break
-                    except KeyError:
-                        arguments = []
+                    rname = register_names[ridx]
+                    if rname not in registers:
                         break
+                    value = registers[register_names[ridx]]
 
-                if arguments:
-                    flag = True
-                else:
-                    continue
+                    argument = self.convert_args(arg_type, value)
+                    if argument is None:
+                        break
+                    arguments.append(argument)
+
+                    json_item = self.get_json_item(cls_name, mtd_name,
+                                                   arguments)
+                    # make the line unique, # {id}_{rtn_name}
+                    old_content = '# %s' % json_item['id']
+
+                    # If next line is move-result-object, get return
+                    # register name.
+                    res = move_result_obj_prog.search(lines[lidx + 1])
+                    if res:
+                        rtn_name = res.groups()[0]
+                        # To avoid '# abc_v10' be replace with '# abc_v1'
+                        old_content = old_content + '_' + rtn_name + 'X'
+                        self.append_json_item(json_item, mtd, old_content,
+                                              rtn_name)
+                    else:
+                        old_content = old_content + '_X'
+                        self.append_json_item(json_item, mtd, old_content,
+                                              None)
+                    tmp_bodies[lidx] = old_content
 
             mtd.body = '\n'.join(tmp_bodies)
 
