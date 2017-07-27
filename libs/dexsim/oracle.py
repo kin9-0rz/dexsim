@@ -6,13 +6,15 @@ from .plugin_manager import PluginManager
 
 
 class Oracle:
+
     def __init__(self, smali_dir, driver, include_str):
+
         self.driver = driver
         self.smali_files = self.__parse_smali(smali_dir)
         self.methods = self.__filter_methods(include_str)
 
-        self.plugin_manager = PluginManager(self.driver,
-                                            self.methods, self.smali_files)
+        self.plugin_manager = PluginManager(self.driver, self.methods,
+                                            self.smali_files)
 
     def __parse_smali(self, smali_dir):
         smali_files = []

@@ -18,7 +18,7 @@ class PluginManager(object):
         self.__plugins = []
         self.__init__plugins()
 
-    def get_plugins(self, ):
+    def get_plugins(self):
         return self.__plugins
 
     def get_plugin(self, name):
@@ -40,8 +40,8 @@ class PluginManager(object):
             if path and path in __file__:
                 pkg = __file__.replace(path, '')
                 break
-        module_path = os.path.dirname(pkg)[1:].replace(os.sep, '.') + \
-            '.' + self.plugin_dir + '.'
+        module_path = os.path.dirname(pkg)[1:].replace(
+            os.sep, '.') + '.' + self.plugin_dir + '.'
 
         for name in self.plugin_filenames:
             # (name, loader, origin)
