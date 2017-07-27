@@ -32,9 +32,9 @@ class Plugin(object):
 
     ARRAY_DATA_PATTERN = ':array_[\w\d]+\s*.array-data[\w\W\s]+.end array-data'
 
-    # [{'className':'', 'methodName':'', 'arguments':'', 'id':''}]
+    # [{'className':'', 'methodName':'', 'arguments':'', 'id':''}, ..., ]
     json_list = []
-    #
+    # [(mtd, old_content, new_content), ..., ]
     target_contexts = {}
     #
     data_arraies = {}
@@ -110,7 +110,7 @@ class Plugin(object):
                            'invoke-static {v0, v1}, Landroid/util/Log;->d'
                            '(Ljava/lang/String;Ljava/lang/String;)I\n')
 
-        if mid not in self.target_contexts.keys():
+        if mid not in self.target_contexts:
             self.target_contexts[mid] = [(mtd, old_content, new_content)]
         else:
             self.target_contexts[mid].append((mtd, old_content, new_content))
@@ -133,32 +133,32 @@ class Plugin(object):
         outputs = self.driver.decode(tfile.name)
         os.unlink(tfile.name)
 
-        for key in outputs:
-            if 'success' in outputs[key]:
-                if key not in self.target_contexts.keys():
-                    print('not found', key)
-                    print(outputs[key])
+        if isinstance(outputs, str):
+            return
 
+        for key, value in outputs.items():
+            if 'success' not in value:
+                continue
+
+            if key not in self.target_contexts:
+                print('not found', key)
+                continue
+
+            # json_item, mtd, old_content, rtn_name
+            for item in self.target_contexts[key]:
+                old_body = item[0].body
+                old_content = item[1]
+                new_content = item[2] % value[1]
+
+                # It's not a string.
+                if outputs[key][1] == 'null':
                     continue
-                # json_item, mtd, old_content, rtn_name
-                for item in self.target_contexts[key]:
-                    old_body = item[0].body
-                    old_content = item[1]
-                    try:
-                        print(item[2], outputs[key][1])
-                    except:
-                        pass
-                    new_content = item[2] % outputs[key][1]
 
-                    # It's not a string.
-                    if outputs[key][1] == 'null':
-                        continue
+                item[0].body = old_body.replace(old_content, new_content)
+                item[0].modified = True
+                self.make_changes = True
 
-                    item[0].body = old_body.replace(old_content, new_content)
-                    item[0].modified = True
-                    self.make_changes = True
-
-                    self.smali_mtd_updated_set.add(item[0].descriptor)
+                self.smali_mtd_updated_set.add(item[0].descriptor)
 
         self.smali_files_update()
 
