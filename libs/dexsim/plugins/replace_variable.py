@@ -63,8 +63,7 @@ class ReplaceVariable(Plugin):
                     line = i.group()
                     old_content = line
                     new_content = line.replace(
-                        'sget-object', 'const-string').replace(key,
-                                                               fields[key])
+                        'sget-object', 'const-string').replace(key, fields[key])
 
                     mtd.body = mtd.body.replace(old_content, new_content)
                     mtd.modified = True

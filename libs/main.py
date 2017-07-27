@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import argparse
 from time import clock
 import os
@@ -17,15 +15,14 @@ from smafile import SmaliFile
 from .dexsim.driver import Driver
 from .dexsim.oracle import Oracle
 
-
 DEBUG = False
 
 main_path = ''
 for path in sys.path:
     if path != '' and path in __file__:
-         main_path = path
+        main_path = path
 
-with open(os.path.join(main_path, "res", 'smali.txt'), 'r', encoding='utf-8') as f:
+with open(os.path.join(main_path, "res", 'smali.txt'), encoding='utf-8') as f:
     lines = f.readlines()
 
 
@@ -70,14 +67,12 @@ def smali(smali_dir, output_file='out.dex'):
 
 def main(args):
     global DEBUG
-    # 仅解密包含该字符串的类
     include_str = args.i
 
-    # 开启调试模式
+    # Debug mode
     DEBUG = args.d
     smali_dir = None
     if DEBUG:
-        # 开启调试模式后，默认smali目录会在当前目录生成，并且，内容不会删除
         smali_dir = os.path.join(os.path.abspath(os.curdir), 'smali')
     else:
         smali_dir = tempfile.mkdtemp()
@@ -87,7 +82,7 @@ def main(args):
         output_dex = args.o
 
     dex_file = None
-    if os.path.isdir(args.f): # smali 目录
+    if os.path.isdir(args.f):  # smali dir
         if args.f.endswith('\\') or args.f.endswith('/'):
             smali_dir = args.f[:-1]
         else:
@@ -110,7 +105,6 @@ def main(args):
         import zipfile
         zipFile = zipfile.ZipFile(apk_path)
 
-        # 反编译所有的classes\d.dex文件
         for item in zipFile.namelist():
             if ptn.match(item):
                 print(item)
@@ -118,7 +112,6 @@ def main(args):
                 baksmali(output_path, smali_dir)
         zipFile.close()
 
-        # 回编译为临时的dex文件
         dex_file = os.path.join(tempdir, 'new.dex')
 
         smali(smali_dir, dex_file)
@@ -136,7 +129,8 @@ def dexsim_dex(dex_file, smali_dir, include_str, output_dex):
     if output_dex:
         smali(smali_dir, output_dex)
     else:
-        smali(smali_dir, os.path.splitext(os.path.basename(dex_file))[0] + '.sim.dex')
+        smali(smali_dir,
+              os.path.splitext(os.path.basename(dex_file))[0] + '.sim.dex')
 
     if not DEBUG:
         shutil.rmtree(smali_dir)
@@ -145,7 +139,9 @@ def dexsim_dex(dex_file, smali_dir, include_str, output_dex):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='dexsim', description='')
     parser.add_argument('f', help='Smali Directory / DEX / APK')
-    parser.add_argument('-i', help='Only optimize methods and classes matching the pattern, e.g. La/b/c;->decode')
+    parser.add_argument('-i',
+                        help='Only optimize methods and\
+                        classes matching the pattern, e.g. La/b/c;->decode')
     parser.add_argument('-o', help='output file path')
     parser.add_argument('-d', action='store_true', help='DEBUG MODE')
 
