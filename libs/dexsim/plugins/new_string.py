@@ -8,7 +8,7 @@ __all__ = ["NEW_STRING"]
 
 class NEW_STRING(Plugin):
     name = "NEW_STRING"
-    enabled = False
+    enabled = True
 
     def __init__(self, driver, methods, smali_files):
         self.emu = Emulator()

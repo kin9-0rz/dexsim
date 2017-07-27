@@ -7,7 +7,7 @@ __all__ = ["ReplaceVariable"]
 
 class ReplaceVariable(Plugin):
     name = "ReplaceVariable"
-    enabled = False
+    enabled = True
 
     def __init__(self, driver, methods, smali_files):
         Plugin.__init__(self, driver, methods, smali_files)
@@ -33,7 +33,7 @@ class ReplaceVariable(Plugin):
         invoke-virtual {v0, v3}, Ljava/lang/StringBuilder;->
         append(Ljava/lang/String;)Ljava/lang/StringBuilder;
         '''
-        SPUT_OBJECT = (r'sput-object [vp]\d+, L[\w\/\d;]+',
+        SPUT_OBJECT = (r'sput-object [vp]\d+, L[\w\/\d;]+'
                        r'->[\w]+:Ljava/lang/String;')
         SGET_OBJECT = r'sget-object [vp]\d+, '
 

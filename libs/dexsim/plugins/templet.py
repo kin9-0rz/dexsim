@@ -15,8 +15,6 @@ class TEMPLET(Plugin):
 
     def __init__(self, driver, methods, smali_files):
         Plugin.__init__(self, driver, methods, smali_files)
-        from smaliemu.emulator import Emulator
-        self.emu = Emulator()
 
     def run(self):
         print('run Plugin: %s' % self.name, end=' -> ')
@@ -30,15 +28,14 @@ class TEMPLET(Plugin):
             with open(file_path, encoding='utf-8') as f:
                 datas = yaml.load(f.read())
                 for item in datas:
-                    for key in item:
+                    for key, value in item.items():
                         self.tname = key
-
-                        if not item[key]['enabled']:
+                        if not value['enabled']:
                             print('Not Load templet:', self.tname)
                             continue
                         print('Load templet:', self.tname)
-                        args = item[key]['args'].replace('\\', '')
-                        ptn = ''.join(item[key]['pattern'])
+                        args = value['args'].replace('\\', '')
+                        ptn = ''.join(value['pattern'])
                         self.__process(args, ptn)
 
     def convert_args(self, typ8, value):
@@ -107,8 +104,8 @@ class TEMPLET(Plugin):
         type_ptn = r'\[?(I|B|C|Ljava\/lang\/String;)'
         type_prog = re.compile(type_ptn)
 
-        self.json_list = []
-        self.target_contexts = {}
+        self.json_list.clear()
+        self.target_contexts.clear()
 
         argument_is_arr = False
         if 'arr' in self.tname:
