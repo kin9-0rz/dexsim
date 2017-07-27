@@ -1,6 +1,5 @@
 import os
 import sys
-from imp import find_module, load_module, acquire_lock, release_lock
 import importlib
 
 from .plugin import Plugin
@@ -41,10 +40,12 @@ class PluginManager(object):
             if path and path in __file__:
                 pkg = __file__.replace(path, '')
                 break
-        module_path = os.path.dirname(pkg)[1:].replace(os.sep, '.') + '.' + self.plugin_dir + '.'
+        module_path = os.path.dirname(pkg)[1:].replace(os.sep, '.') + \
+            '.' + self.plugin_dir + '.'
 
         for name in self.plugin_filenames:
-            spec = importlib.util.find_spec(module_path + name)  # (name, loader, origin)
+            # (name, loader, origin)
+            spec = importlib.util.find_spec(module_path + name)
 
             mod = spec.loader.load_module()
             for attrname in mod.__all__:
@@ -56,4 +57,5 @@ class PluginManager(object):
                     print("Don't load plugin", clazz.name)
                     continue
 
-                self.__plugins.append(clazz(self.driver, self.methods, self.smali_files))
+                self.__plugins.append(clazz(self.driver, self.methods,
+                                            self.smali_files))
