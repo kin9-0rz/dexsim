@@ -1,0 +1,23 @@
+# decode int
+# 正则表达式的写法，分组的时候，需要返回 - 寄存器、类名、方法名、参数/proto
+# invoke-static {v1, v2, v5}, Lcom/skt/pig/UserInterface;->a(III)Ljava/lang/String;
+# ('v1', 'v2', 'v5', 'Lcom/skt/pig/UserInterface', 'a', 'III')
+
+-  char1:
+    enabled: 1
+    args: I
+    pattern:
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((C)\)
+      - Ljava/lang/String;\s*
+-  char2:
+    enabled: 1
+    args: I
+    pattern:
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((CC)\)
+      - Ljava/lang/String;\s*
+-  char3:
+    enabled: 1
+    args: I
+    pattern:
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((CCC)\)
+      - Ljava/lang/String;\s*

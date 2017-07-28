@@ -12,8 +12,8 @@ import powerzip
 
 from smafile import SmaliFile
 
-from .dexsim.driver import Driver
-from .dexsim.oracle import Oracle
+from libs.dexsim.driver import Driver
+from libs.dexsim.oracle import Oracle
 
 DEBUG = False
 

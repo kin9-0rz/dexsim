@@ -9,7 +9,6 @@ from adbwrapper import ADB
 
 
 class Driver:
-    """It's a driver."""
 
     def __init__(self):
         """Init adb and command.
@@ -44,7 +43,6 @@ class Driver:
         merged_dex = 'merged.dex'
         cmd = "java -cp %s com.android.dx.merge.DexMerger %s %s %s" % (
             dx_path, merged_dex, target_dex, driver_path)
-        print(cmd)
         subprocess.call(cmd, shell=True)
         print('Pushing merged driver to device ...')
 
@@ -56,31 +54,32 @@ class Driver:
 
         self.adb.run_cmd(['push', merged_apk, '/data/local/od.zip'])
 
-        os.remove(merged_apk)
-        os.remove(merged_dex)
+        # os.remove(merged_apk)
+        # os.remove(merged_dex)
 
     def decode(self, targets):
         """Decode the targe dex in device or emulator."""
         self.adb.run_cmd(['push', targets, '/data/local/od-targets.json'])
         self.adb.shell_command(self.cmd_stub)
 
-        output_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
-        self.adb.run_cmd(
-            ['pull', '/data/local/od-output.json', output_file.name])
+        output = self.adb.get_output()
+        if output:
+            print(self.adb.get_output().decode('utf-8', errors='ignore'))
+
+        tempdir = tempfile.gettempdir()
+        output_path = os.path.join(tempdir, 'output.json')
+        self.adb.run_cmd(['pull', '/data/local/od-output.json', output_path])
 
         result = ''
-        try:
-            output_file = open(output_file.name, encoding='utf-8')
-            result = json.load(output_file)
-        except Exception as e:
-            import shutil
-            shutil.copy(output_file.name, 'output.txt')
-            self.adb.run_cmd(
-                ['pull', '/data/local/od-exception.txt', 'exception.txt'])
-            self.adb.shell_command(['rm', '/data/local/od-exception.txt'])
+        with open(output_path, mode='r+') as ofile:
+            size = len(ofile.read())
+            if not size:
+                self.adb.run_cmd(['pull', '/data/local/od-exception.txt', 'exception.txt'])
+                self.adb.shell_command(['rm', '/data/local/od-exception.txt'])
+            else:
+                ofile.seek(0)
+                result = json.load(ofile)
 
         self.adb.shell_command(['rm', '/data/local/od-output.json'])
         self.adb.shell_command(['rm', '/data/local/od-targets.json'])
-        output_file.close()
-        os.unlink(output_file.name)
         return result

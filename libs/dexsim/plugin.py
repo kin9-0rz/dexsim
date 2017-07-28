@@ -136,6 +136,8 @@ class Plugin(object):
         if isinstance(outputs, str):
             return
 
+        print(outputs)
+
         for key, value in outputs.items():
             if 'success' not in value:
                 continue
