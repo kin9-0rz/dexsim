@@ -43,6 +43,10 @@ class TEMPLET(Plugin):
         if typ8 == 'I':
             return 'I:' + str(value)
 
+        if typ8 == 'C':
+            # don't convert to char, avoid some unreadable chars.
+            return 'C:' + str(value)
+
         if typ8 == 'Ljava/lang/String;':
             if not isinstance(value, str):
                 return None
@@ -193,24 +197,29 @@ class TEMPLET(Plugin):
                         break
                     arguments.append(argument)
 
-                    json_item = self.get_json_item(cls_name, mtd_name,
-                                                   arguments)
-                    # make the line unique, # {id}_{rtn_name}
-                    old_content = '# %s' % json_item['id']
+                if argument is None:
+                    continue
 
-                    # If next line is move-result-object, get return
-                    # register name.
-                    res = move_result_obj_prog.search(lines[lidx + 1])
-                    if res:
-                        rtn_name = res.groups()[0]
-                        # To avoid '# abc_v10' be replace with '# abc_v1'
-                        old_content = old_content + '_' + rtn_name + 'X'
-                        self.append_json_item(json_item, mtd, old_content,
-                                              rtn_name)
-                    else:
-                        old_content = old_content + '_X'
-                        self.append_json_item(json_item, mtd, old_content, None)
-                    tmp_bodies[lidx] = old_content
+                json_item = self.get_json_item(cls_name, mtd_name,
+                                               arguments)
+                # make the line unique, # {id}_{rtn_name}
+                old_content = '# %s' % json_item['id']
+
+                # If next line is move-result-object, get return
+                # register name.
+                res = move_result_obj_prog.search(lines[lidx + 1])
+                if res:
+                    rtn_name = res.groups()[0]
+                    # To avoid '# abc_v10' be replace with '# abc_v1'
+                    old_content = old_content + '_' + rtn_name + 'X'
+                    self.append_json_item(json_item, mtd, old_content,
+                                          rtn_name)
+                else:
+                    old_content = old_content + '_X'
+                    self.append_json_item(json_item, mtd, old_content, None)
+
+                print(json_item)
+                tmp_bodies[lidx] = old_content
 
             mtd.body = '\n'.join(tmp_bodies)
 

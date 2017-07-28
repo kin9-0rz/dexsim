@@ -2,7 +2,7 @@ import os
 import re
 
 from smafile import SmaliFile
-from .plugin_manager import PluginManager
+from libs.dexsim.plugin_manager import PluginManager
 
 
 class Oracle:

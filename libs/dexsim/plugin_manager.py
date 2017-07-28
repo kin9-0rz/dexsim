@@ -2,7 +2,7 @@ import os
 import sys
 import importlib
 
-from .plugin import Plugin
+from libs.dexsim.plugin import Plugin
 
 
 class PluginManager(object):
