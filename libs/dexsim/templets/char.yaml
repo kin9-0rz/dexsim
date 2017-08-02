@@ -5,19 +5,25 @@
 
 -  char1:
     enabled: 1
-    args: I
+    protos:
+      - C
     pattern:
       - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((C)\)
       - Ljava/lang/String;\s*
 -  char2:
     enabled: 1
-    args: I
+    protos:
+      - C
+      - C
     pattern:
       - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((CC)\)
       - Ljava/lang/String;\s*
 -  char3:
     enabled: 1
-    args: I
+    protos: 
+      - C
+      - C
+      - C
     pattern:
       - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((CCC)\)
       - Ljava/lang/String;\s*

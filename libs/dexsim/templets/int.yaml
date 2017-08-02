@@ -5,19 +5,25 @@
 
 -  int1:
     enabled: 1
-    args: I
+    protos:
+      - I
     pattern:
       - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((I)\)
       - Ljava/lang/String;\s*
 -  int2:
     enabled: 1
-    args: I
+    protos:
+      - I
+      - I
     pattern:
       - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((II)\)
       - Ljava/lang/String;\s*
 -  int3:
     enabled: 1
-    args: I
+    protos:
+      - I
+      - I
+      - I
     pattern:
       - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((III)\)
       - Ljava/lang/String;\s*

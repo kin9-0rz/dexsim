@@ -34,9 +34,13 @@ class TEMPLET(Plugin):
                             print('Not Load templet:', self.tname)
                             continue
                         print('Load templet:', self.tname)
-                        args = value['args'].replace('\\', '')
+                        if value['protos']:
+                            protos = [i.replace('\\', '')
+                                      for i in value['protos']]
+                        else:
+                            protos = []
                         ptn = ''.join(value['pattern'])
-                        self.__process(args, ptn)
+                        self.__process(protos, ptn)
 
     def convert_args(self, typ8, value):
         '''Convert the value of register/argument to json format.'''
@@ -59,6 +63,8 @@ class TEMPLET(Plugin):
             return "java.lang.String:" + str(args)
 
         if typ8 == '[B':
+            if not isinstance(value, list):
+                return None
             byte_arr = []
             for item in value:
                 if item == '':
@@ -67,6 +73,8 @@ class TEMPLET(Plugin):
             return '[B:' + str(byte_arr)
 
         if typ8 == '[C':
+            if not isinstance(value, list):
+                return None
             byte_arr = []
             for item in value:
                 if item == '':
@@ -94,7 +102,7 @@ class TEMPLET(Plugin):
 
         return array_datas
 
-    def __process(self, args, pattern):
+    def __process(self, protos, pattern):
         templet_prog = re.compile(pattern)
 
         const_ptn = r'const.*?(v\d+),.*'
@@ -105,11 +113,8 @@ class TEMPLET(Plugin):
 
         move_result_obj_ptn = r'move-result-object ([vp]\d+)'
         move_result_obj_prog = re.compile(move_result_obj_ptn)
-        type_ptn = r'\[?(I|B|C|Ljava\/lang\/String;)'
-        type_prog = re.compile(type_ptn)
-
-        self.json_list.clear()
-        self.target_contexts.clear()
+        # type_ptn = r'\[?(I|B|C|Ljava\/lang\/String;)'
+        # type_prog = re.compile(type_ptn)
 
         argument_is_arr = False
         if 'arr' in self.tname:
@@ -161,13 +166,16 @@ class TEMPLET(Plugin):
                 if not result_mtd:
                     continue
 
-                if 'Ljava/lang/String;->valueOf(I)Ljava/lang/String' in line:
+                if 'Ljava/lang/String;->valueOf(I)Ljava/lang/String;' in line:
+                    continue
+
+                if 'Ljava/lang/Integer;->toHexString(I)Ljava/lang/String;' in line:
                     continue
 
                 mtd_groups = result_mtd.groups()
                 cls_name = mtd_groups[-3][1:].replace('/', '.')
                 mtd_name = mtd_groups[-2]
-                proto = mtd_groups[-1]
+                # proto = mtd_groups[-1]
 
                 register_names = []
                 #  invoke-static {v14, v16},
@@ -183,21 +191,20 @@ class TEMPLET(Plugin):
                 # "arguments": ["I:198", "I:115", "I:26"]}
                 arguments = []
                 ridx = -1
-                for item in type_prog.finditer(proto):
+                # yaml 指定参数类型？直接就知道参数类型和个数。
+                for item in protos:
                     ridx += 1
-                    arg_type = item.group()
-
                     rname = register_names[ridx]
                     if rname not in registers:
                         break
                     value = registers[register_names[ridx]]
 
-                    argument = self.convert_args(arg_type, value)
+                    argument = self.convert_args(item, value)
                     if argument is None:
                         break
                     arguments.append(argument)
 
-                if argument is None:
+                if len(arguments) != len(protos):
                     continue
 
                 json_item = self.get_json_item(cls_name, mtd_name,
@@ -224,3 +231,4 @@ class TEMPLET(Plugin):
             mtd.body = '\n'.join(tmp_bodies)
 
         self.optimize()
+        self.clear()
