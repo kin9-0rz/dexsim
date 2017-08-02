@@ -54,27 +54,30 @@ class Driver:
 
         self.adb.run_cmd(['push', merged_apk, '/data/local/od.zip'])
 
-        # os.remove(merged_apk)
-        # os.remove(merged_dex)
+        os.remove(merged_apk)
+        os.remove(merged_dex)
 
     def decode(self, targets):
-        """Decode the targe dex in device or emulator."""
         self.adb.run_cmd(['push', targets, '/data/local/od-targets.json'])
         self.adb.shell_command(self.cmd_stub)
 
-        output = self.adb.get_output()
-        if output:
-            print(self.adb.get_output().decode('utf-8', errors='ignore'))
+        output = self.adb.get_output().decode('utf-8', errors='ignore')
+
+        if 'success' not in output:
+            print(output)
+            return
+
+        print(output)
 
         tempdir = tempfile.gettempdir()
         output_path = os.path.join(tempdir, 'output.json')
         self.adb.run_cmd(['pull', '/data/local/od-output.json', output_path])
 
-        result = ''
-        with open(output_path, mode='r+') as ofile:
+        with open(output_path, mode='r+', encoding='utf-8') as ofile:
             size = len(ofile.read())
             if not size:
-                self.adb.run_cmd(['pull', '/data/local/od-exception.txt', 'exception.txt'])
+                self.adb.run_cmd(
+                    ['pull', '/data/local/od-exception.txt', 'exception.txt'])
                 self.adb.shell_command(['rm', '/data/local/od-exception.txt'])
             else:
                 ofile.seek(0)
@@ -82,4 +85,6 @@ class Driver:
 
         self.adb.shell_command(['rm', '/data/local/od-output.json'])
         self.adb.shell_command(['rm', '/data/local/od-targets.json'])
+        os.unlink(output_path)
+
         return result

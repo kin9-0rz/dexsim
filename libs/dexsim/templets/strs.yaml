@@ -1,7 +1,14 @@
 # decode string
+-  str0:
+    enabled: 1
+    protos: 
+    pattern:
+      - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->([^\(]+)\(()\)
+      - Ljava/lang/String;\s*
 -  str1:
     enabled: 1
-    args: java.lang.String
+    protos: 
+      - Ljava/lang/String;
     pattern:
       - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;)\)
       - Ljava/lang/String;\s*
@@ -13,13 +20,18 @@
       - const-string v4, "decoded string"
 - str2:
     enabled: 1
-    args: java.lang.String
+    protos: 
+      - Ljava/lang/String;
+      - Ljava/lang/String;
     pattern:
       - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;Ljava/lang/String;)\)
       - Ljava/lang/String;\s*
 - str3:
     enabled: 1
-    args: java.lang.String
+    protos: 
+      - Ljava/lang/String;
+      - Ljava/lang/String;
+      - Ljava/lang/String;
     pattern:
       - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->
       - ([^\(]+)\((Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)\)

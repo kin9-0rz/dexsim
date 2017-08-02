@@ -30,7 +30,7 @@ class Plugin(object):
     # fill-array-data v1, :array_4e
     FILL_ARRAY_DATA = r'fill-array-data [vp]\d+, :array_[\w\d]+\s+'
 
-    ARRAY_DATA_PATTERN = ':array_[\w\d]+\s*.array-data[\w\W\s]+.end array-data'
+    ARRAY_DATA_PATTERN = r':array_[\w\d]+\s*.array-data[\w\W\s]+.end array-data'
 
     # [{'className':'', 'methodName':'', 'arguments':'', 'id':''}, ..., ]
     json_list = []
@@ -71,7 +71,7 @@ class Plugin(object):
                         arr.extend(array_data_content)
 
                     arr_data = self.emu.call(arr)
-                    if len(self.emu.vm.exceptions) > 0:
+                    if self.emu.vm.exceptions:
                         break
 
                     arguments = []
@@ -133,18 +133,20 @@ class Plugin(object):
         outputs = self.driver.decode(tfile.name)
         os.unlink(tfile.name)
 
-        if isinstance(outputs, str):
+        if not outputs:
             return
 
-        print(outputs)
+        if isinstance(outputs, str):
+            return
 
         for key, value in outputs.items():
             if 'success' not in value:
                 continue
-
             if key not in self.target_contexts:
-                print('not found', key)
+                print('not found', end='')
                 continue
+
+            print(bytearray(value[1], encoding='utf-8'))
 
             # json_item, mtd, old_content, rtn_name
             for item in self.target_contexts[key]:
@@ -163,6 +165,10 @@ class Plugin(object):
                 self.smali_mtd_updated_set.add(item[0].descriptor)
 
         self.smali_files_update()
+
+    def clear(self):
+        self.json_list.clear()
+        self.target_contexts.clear()
 
     def smali_files_update(self):
         '''

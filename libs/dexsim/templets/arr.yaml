@@ -1,7 +1,8 @@
 # decode int
 -  int_arr:
     enabled: 0
-    args: \[I
+    protos: 
+      - \[I
     pattern:
       - new-array [vp]\d+, [vp]\d+, \[I\s*
       - fill-array-data [vp]\d+, :array_[\w\d]+\s*
@@ -10,19 +11,22 @@
       - move-result-object ([vp]\d+)
 -  byte_arr:
     enabled: 1
-    args: \[B
+    protos: 
+      - \[B
     pattern:
       - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->([^\(]+)\((\[B)\)
       - Ljava/lang/String;\s*
 -  char_arr:
     enabled: 1
-    args: \[C
+    protos: 
+      - \[C
     pattern:
       - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->([^\(]+)\((\[C)\)
       - Ljava/lang/String;\s*
 -  byte_arr_sget:
     enabled: 0
-    args: \[B
+    protos: 
+      - \[B
     pattern:
       - sget-object (v\d+), (.+)\s*
       - invoke-static[/\s\w]+\{[vp,\d\s\.]+},\s+([^;]+);->([^\(]+\(\[B\))

@@ -3,27 +3,27 @@
 # invoke-static {v1, v2, v5}, Lcom/skt/pig/UserInterface;->a(III)Ljava/lang/String;
 # ('v1', 'v2', 'v5', 'Lcom/skt/pig/UserInterface', 'a', 'III')
 
--  int1:
+-  double1:
     enabled: 1
     protos:
-      - I
+      - D
     pattern:
-      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((I)\)
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((D)\)
       - Ljava/lang/String;\s*
--  int2:
+-  double2:
     enabled: 1
     protos:
-      - I
-      - I
+      - D
+      - D    
     pattern:
-      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((II)\)
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((DD)\)
       - Ljava/lang/String;\s*
--  int3:
+-  double3:
     enabled: 1
     protos:
-      - I
-      - I
-      - I
+      - D
+      - D
+      - D
     pattern:
-      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((III)\)
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((DDD)\)
       - Ljava/lang/String;\s*
