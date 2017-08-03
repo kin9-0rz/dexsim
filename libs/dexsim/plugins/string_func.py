@@ -34,7 +34,11 @@ class STRING_FUNC(Plugin):
             self.__process_string_valueof()
         except TIMEOUT_EXCEPTION as ex:
             print(ex)
-        # self.__process_string_builder()
+
+        try:
+            self.__process_string_builder()
+        except TIMEOUT_EXCEPTION as ex:
+            print(ex)
         # self.__process_string_buffer()
 
     @timeout(5)
@@ -149,13 +153,8 @@ class STRING_FUNC(Plugin):
             r'new-instance v\d+, Ljava/lang/StringBuilder;'
             r'[\w\W\s]+?{(v\d+)[.\sv\d]*}, '
             r'Ljava/lang/StringBuilder;->toString\(\)Ljava/lang/String;')
-        prog3 = re.compile(to_string_re)
+        prog = re.compile(to_string_re)
         for mtd in self.methods:
-
-            if 'const-string' not in mtd.body:
-                continue
-            if 'Ljava/lang/StringBuilder;-><init>' not in mtd.body:
-                continue
             if 'Ljava/lang/StringBuilder;->toString()Ljava/lang/String;'\
                not in mtd.body:
                 continue
@@ -163,18 +162,14 @@ class STRING_FUNC(Plugin):
             flag = False
             new_content = None
 
-            result = prog3.finditer(mtd.body)
-
+            result = prog.finditer(mtd.body)
             for item in result:
                 rtname = item.groups()[0]
+
                 old_content = item.group()
-                arr = re.split(r'\n+', old_content)
-                arr.append('return-object %s' % rtname)
-
-                result = self.emu.call(arr, thrown=False)
-
-                if self.emu.vm.exceptions:
-                    continue
+                snippet = re.split(r'\n+', old_content)
+                snippet.append('return-object %s' % rtname)
+                result = self.emu.call(snippet, thrown=False)
 
                 if result:
                     new_content = 'const-string %s, "%s"' % (
@@ -196,12 +191,9 @@ class STRING_FUNC(Plugin):
             r'new-instance v\d+, Ljava/lang/StringBuffer;'
             r'[\w\W\s]+?{(v\d+)[.\sv\d]*}, '
             r'Ljava/lang/StringBuffer;->toString\(\)Ljava/lang/String;')
-        prog3 = re.compile(to_string_re)
+        prog = re.compile(to_string_re)
+
         for mtd in self.methods:
-            if 'const-string' not in mtd.body:
-                continue
-            if 'Ljava/lang/StringBuilder;-><init>' not in mtd.body:
-                continue
             if 'Ljava/lang/StringBuilder;->toString()Ljava/lang/String;' not\
                in mtd.body:
                 continue
@@ -209,7 +201,7 @@ class STRING_FUNC(Plugin):
             flag = False
             new_content = None
 
-            result = prog3.finditer(mtd.body)
+            result = prog.finditer(mtd.body)
 
             for item in result:
                 rtname = item.groups()[0]
