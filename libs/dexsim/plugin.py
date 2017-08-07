@@ -146,7 +146,10 @@ class Plugin(object):
                 print('not found', end='')
                 continue
 
-            print(bytearray(value[1], encoding='utf-8'))
+            if len(value[1]) == 2:
+                continue
+
+            # print(bytearray(value[1], encoding='utf-8'))
 
             # json_item, mtd, old_content, rtn_name
             for item in self.target_contexts[key]:

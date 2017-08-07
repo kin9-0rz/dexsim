@@ -39,7 +39,8 @@ class STRING_FUNC(Plugin):
             self.__process_string_builder()
         except TIMEOUT_EXCEPTION as ex:
             print(ex)
-        # self.__process_string_buffer()
+
+        self.__process_string_buffer()
 
     @timeout(5)
     def __process_new_string(self):
@@ -149,11 +150,11 @@ class STRING_FUNC(Plugin):
 
     @timeout(5)
     def __process_string_builder(self):
-        to_string_re = (
+        ptn = (
             r'new-instance v\d+, Ljava/lang/StringBuilder;'
             r'[\w\W\s]+?{(v\d+)[.\sv\d]*}, '
             r'Ljava/lang/StringBuilder;->toString\(\)Ljava/lang/String;')
-        prog = re.compile(to_string_re)
+        prog = re.compile(ptn)
         for mtd in self.methods:
             if 'Ljava/lang/StringBuilder;->toString()Ljava/lang/String;'\
                not in mtd.body:
@@ -187,31 +188,29 @@ class STRING_FUNC(Plugin):
 
     @timeout(5)
     def __process_string_buffer(self):
-        to_string_re = (
+        ptn = (
             r'new-instance v\d+, Ljava/lang/StringBuffer;'
             r'[\w\W\s]+?{(v\d+)[.\sv\d]*}, '
             r'Ljava/lang/StringBuffer;->toString\(\)Ljava/lang/String;')
-        prog = re.compile(to_string_re)
+        prog = re.compile(ptn)
 
         for mtd in self.methods:
-            if 'Ljava/lang/StringBuilder;->toString()Ljava/lang/String;' not\
-               in mtd.body:
+            if 'Ljava/lang/StringBuffer;->toString()Ljava/lang/String;'\
+               not in mtd.body:
                 continue
 
             flag = False
             new_content = None
 
             result = prog.finditer(mtd.body)
-
             for item in result:
                 rtname = item.groups()[0]
-                old_content = item.group()
-                arr = re.split(r'\n+', old_content)
-                arr.append('return-object %s' % rtname)
 
-                result = self.emu.call(arr, thrown=False)
-                if self.emu.vm.exceptions:
-                    continue
+                old_content = item.group()
+                snippet = re.split(r'\n+', old_content)
+                snippet.append('return-object %s' % rtname)
+                result = self.emu.call(snippet, thrown=False)
+
                 if result:
                     new_content = 'const-string %s, "%s"' % (
                         rtname, result)
