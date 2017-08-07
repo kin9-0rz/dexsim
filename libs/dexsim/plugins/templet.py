@@ -225,7 +225,7 @@ class TEMPLET(Plugin):
                     old_content = old_content + '_X'
                     self.append_json_item(json_item, mtd, old_content, None)
 
-                print(json_item)
+                # print(json_item)
                 tmp_bodies[lidx] = old_content
 
             mtd.body = '\n'.join(tmp_bodies)
