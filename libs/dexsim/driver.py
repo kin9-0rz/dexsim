@@ -67,8 +67,6 @@ class Driver:
             print(output)
             return
 
-        print(output)
-
         tempdir = tempfile.gettempdir()
         output_path = os.path.join(tempdir, 'output.json')
         self.adb.run_cmd(['pull', '/data/local/od-output.json', output_path])
