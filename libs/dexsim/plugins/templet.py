@@ -30,6 +30,10 @@ class TEMPLET(Plugin):
                 for item in datas:
                     for key, value in item.items():
                         self.tname = key
+
+                        if key != 'str2':
+                            continue
+
                         if not value['enabled']:
                             print('Not Load templet:', self.tname)
                             continue
@@ -41,66 +45,6 @@ class TEMPLET(Plugin):
                             protos = []
                         ptn = ''.join(value['pattern'])
                         self.__process(protos, ptn)
-
-    def convert_args(self, typ8, value):
-        '''Convert the value of register/argument to json format.'''
-        if typ8 == 'I':
-            return 'I:' + str(value)
-
-        if typ8 == 'C':
-            # don't convert to char, avoid some unreadable chars.
-            return 'C:' + str(value)
-
-        if typ8 == 'Ljava/lang/String;':
-            if not isinstance(value, str):
-                return None
-
-            import codecs
-            item = codecs.getdecoder('unicode_escape')(value)[0]
-            args = []
-            for i in item.encode("UTF-8"):
-                args.append(i)
-            return "java.lang.String:" + str(args)
-
-        if typ8 == '[B':
-            if not isinstance(value, list):
-                return None
-            byte_arr = []
-            for item in value:
-                if item == '':
-                    item = 0
-                byte_arr.append(item)
-            return '[B:' + str(byte_arr)
-
-        if typ8 == '[C':
-            if not isinstance(value, list):
-                return None
-            byte_arr = []
-            for item in value:
-                if item == '':
-                    item = 0
-                byte_arr.append(item)
-            return '[C:' + str(byte_arr)
-
-        print(typ8)
-
-    def init_array_datas(self, body):
-        array_datas = {}
-
-        ptn2 = r'(:array_[\w\d]+)\s*.array-data[\w\W\s]+?.end array-data'
-        arr_data_prog = re.compile(ptn2)
-
-        for item in arr_data_prog.finditer(body):
-            array_data_content = re.split(r'\n\s*', item.group())
-            line = 'fill-array-data v0, %s' % item.groups()[0]
-            snippet = []
-            snippet.append(line)
-            snippet.append('return-object v0')
-            snippet.extend(array_data_content)
-            arr_data = self.emu.call(snippet)
-            array_datas[item.groups()[0]] = arr_data
-
-        return array_datas
 
     def __process(self, protos, pattern):
         templet_prog = re.compile(pattern)
@@ -191,7 +135,7 @@ class TEMPLET(Plugin):
                 # "arguments": ["I:198", "I:115", "I:26"]}
                 arguments = []
                 ridx = -1
-                # yaml 指定参数类型？直接就知道参数类型和个数。
+
                 for item in protos:
                     ridx += 1
                     rname = register_names[ridx]
@@ -225,10 +169,69 @@ class TEMPLET(Plugin):
                     old_content = old_content + '_X'
                     self.append_json_item(json_item, mtd, old_content, None)
 
-                # print(json_item)
                 tmp_bodies[lidx] = old_content
 
             mtd.body = '\n'.join(tmp_bodies)
 
         self.optimize()
         self.clear()
+
+    def convert_args(self, typ8, value):
+        '''Convert the value of register/argument to json format.'''
+        if typ8 == 'I':
+            return 'I:' + str(value)
+
+        if typ8 == 'C':
+            # don't convert to char, avoid some unreadable chars.
+            return 'C:' + str(value)
+
+        if typ8 == 'Ljava/lang/String;':
+            if not isinstance(value, str):
+                return None
+
+            import codecs
+            item = codecs.getdecoder('unicode_escape')(value)[0]
+            args = []
+            for i in item.encode("UTF-8"):
+                args.append(i)
+            return "java.lang.String:" + str(args)
+
+        if typ8 == '[B':
+            if not isinstance(value, list):
+                return None
+            byte_arr = []
+            for item in value:
+                if item == '':
+                    item = 0
+                byte_arr.append(item)
+            return '[B:' + str(byte_arr)
+
+        if typ8 == '[C':
+            if not isinstance(value, list):
+                return None
+            byte_arr = []
+            for item in value:
+                if item == '':
+                    item = 0
+                byte_arr.append(item)
+            return '[C:' + str(byte_arr)
+
+        print(typ8)
+
+    def init_array_datas(self, body):
+        array_datas = {}
+
+        ptn2 = r'(:array_[\w\d]+)\s*.array-data[\w\W\s]+?.end array-data'
+        arr_data_prog = re.compile(ptn2)
+
+        for item in arr_data_prog.finditer(body):
+            array_data_content = re.split(r'\n\s*', item.group())
+            line = 'fill-array-data v0, %s' % item.groups()[0]
+            snippet = []
+            snippet.append(line)
+            snippet.append('return-object v0')
+            snippet.extend(array_data_content)
+            arr_data = self.emu.call(snippet)
+            array_datas[item.groups()[0]] = arr_data
+
+        return array_datas
