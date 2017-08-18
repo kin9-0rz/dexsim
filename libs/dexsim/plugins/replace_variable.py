@@ -35,6 +35,9 @@ class ReplaceVariable(Plugin):
 
         sget_ptn = r'sget-object [vp]\d+, '
         for key in fields:
+            # Skip array
+            if ':[' in key:
+                continue
             prog2 = re.compile(sget_ptn + key)
             for mtd in self.methods:
                 for item in prog2.finditer(mtd.body):
