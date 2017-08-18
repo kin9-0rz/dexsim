@@ -31,9 +31,6 @@ class TEMPLET(Plugin):
                     for key, value in item.items():
                         self.tname = key
 
-                        if key != 'str2':
-                            continue
-
                         if not value['enabled']:
                             print('Not Load templet:', self.tname)
                             continue
@@ -127,8 +124,11 @@ class TEMPLET(Plugin):
                     register_names.extend(mtd_groups[0].split(', '))
                 elif 'range' in line:
                     # invoke-static/range {v14 .. v16}
-                    start, end = re.match(r'v(\d+).*?(\d+)',
-                                          mtd_groups[0]).groups()
+                    print(mtd_groups[0])
+                    tmp = re.match(r'v(\d+).*?(\d+)', mtd_groups[0])
+                    if not tmp:
+                        continue
+                    start, end = tmp.groups()
                     for rindex in range(int(start), int(end) + 1):
                         register_names.append('v' + str(rindex))
 
