@@ -139,6 +139,11 @@ class Plugin(object):
         if isinstance(outputs, str):
             return
 
+        # try:
+        #     print(outputs)
+        # except UnicodeEncodeError:
+        #     print(str(outputs).encode('utf-8'))
+
         for key, value in outputs.items():
             if 'success' not in value:
                 continue
