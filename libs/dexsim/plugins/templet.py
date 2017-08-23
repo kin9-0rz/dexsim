@@ -31,6 +31,9 @@ class TEMPLET(Plugin):
                     for key, value in item.items():
                         self.tname = key
 
+                        if key != 'int3':
+                            continue
+
                         if not value['enabled']:
                             print('Not Load templet:', self.tname)
                             continue
@@ -62,8 +65,11 @@ class TEMPLET(Plugin):
             argument_is_arr = True
 
         for mtd in self.methods:
+            # if 'Lcom/ice/jake/a;' not in mtd.descriptor:
+            #     continue
             registers = {}
             array_datas = {}
+            # print(mtd.descriptor)
 
             result = templet_prog.search(mtd.body)
             if not result:
@@ -87,23 +93,8 @@ class TEMPLET(Plugin):
             for line in lines:
                 lidx += 1
 
-                result = const_prog.search(line)
-                if result:
-                    key = result.groups()[0]
-                    return_line = 'return-object %s' % key
-                    registers[key] = self.emu.call([line, return_line],
-                                                   thrown=False)
-                    continue
-
-                result = file_array_data_prog.search(line)
-                if result:
-                    register_name = result.groups()[0]
-                    array_data_name = result.groups()[1]
-                    if array_data_name in array_datas:
-                        registers[register_name] = array_datas[array_data_name]
-                    continue
-
                 result_mtd = templet_prog.search(line)
+
                 if not result_mtd:
                     continue
 
@@ -116,15 +107,13 @@ class TEMPLET(Plugin):
                 mtd_groups = result_mtd.groups()
                 cls_name = mtd_groups[-3][1:].replace('/', '.')
                 mtd_name = mtd_groups[-2]
-                # proto = mtd_groups[-1]
 
                 register_names = []
-                #  invoke-static {v14, v16},
+                # invoke - static {v14, v16},
                 if 'range' not in line:
                     register_names.extend(mtd_groups[0].split(', '))
                 elif 'range' in line:
                     # invoke-static/range {v14 .. v16}
-                    print(mtd_groups[0])
                     tmp = re.match(r'v(\d+).*?(\d+)', mtd_groups[0])
                     if not tmp:
                         continue
@@ -132,18 +121,28 @@ class TEMPLET(Plugin):
                     for rindex in range(int(start), int(end) + 1):
                         register_names.append('v' + str(rindex))
 
+                # TODO 优先使用Smaliemu解密
+                # print('\n\n\n\n测试smali方法解密')
+                # print('VM:', self.get_args(lines[:lidx]))
+
+                registers = self.get_args(lines[:lidx])
+                # print(line)`
+                # print(register_names)
+                # print("MINE:", registers)
+
                 # "arguments": ["I:198", "I:115", "I:26"]}
                 arguments = []
                 ridx = -1
-
+                print(protos)
                 for item in protos:
                     ridx += 1
                     rname = register_names[ridx]
                     if rname not in registers:
                         break
                     value = registers[register_names[ridx]]
-
+                    print(">>>>", item, value)
                     argument = self.convert_args(item, value)
+                    print("rrrr", argument)
                     if argument is None:
                         break
                     arguments.append(argument)
@@ -151,8 +150,26 @@ class TEMPLET(Plugin):
                 if len(arguments) != len(protos):
                     continue
 
+                # clz_sig, mtd_sig = re.search(
+                #     r'^.*, (.*?)->(.*?)$', line).groups()
+
+                # sf = self.smali_files_dict[clz_sig]
+                # mtd = sf.methods_dict[mtd_sig]
+                # i = 0
+                # args = {}
+                # for arg in arguments:
+                #     key = 'p' + str(i)
+                #     args[key] = arg.split(':')[1]
+                #     i += 1
+
+                # print(cls_name, mtd_name, arguments)
+                # self.run_smali(args, mtd.body)
+
+                # continue
+
                 json_item = self.get_json_item(cls_name, mtd_name,
                                                arguments)
+                # print(json_item)
                 # make the line unique, # {id}_{rtn_name}
                 old_content = '# %s' % json_item['id']
 
@@ -176,9 +193,129 @@ class TEMPLET(Plugin):
         self.optimize()
         self.clear()
 
+    def get_args(self, lines):
+        from smaliemu.emulator import Emulator
+        emu2 = Emulator()
+        snippet = lines.copy()
+        snippet = self.merge_body(lines)
+
+        for line in snippet.copy():
+            if 'iget-boolean' in line:
+                snippet.remove(line)
+            elif 'const-class' in line:
+                snippet.remove(line)
+            elif line.startswith('if-'):
+                snippet.remove(line)
+            elif line.startswith('return-'):
+                snippet.remove(line)
+            elif line.startswith(':try_end'):
+                snippet.remove(line)
+            elif line.startswith('goto'):
+                snippet.remove(line)
+
+        emu2.call(snippet, thrown=False)
+
+        return emu2.vm.variables
+
+    def merge_body(self, snippet):
+        clz_sigs = set()
+        prog = re.compile(r'^.*, (.*?)->.*$')
+        for line in snippet:
+            if 'sget' in line:
+                clz_sigs.add(prog.match(line).groups()[0])
+
+        for clz_sig in clz_sigs:
+            for sf in self.smali_files:
+                if clz_sig != sf.sign:
+                    continue
+
+                for mtd in sf.methods:
+                    mtd_sign = mtd.signature
+                    if '<clinit>()V' in mtd_sign:
+                        body = mtd.body
+                        tmp = re.split(r'\n\s*', body)
+                        idx = tmp.index('return-void')
+                        start = tmp[:idx]
+                        end = tmp[idx + 1:]
+                        start.extend(snippet)
+                        start.extend(end)
+                        snippet = start.copy()
+                    elif '<init>()V' in mtd_sign:
+                        body = mtd.body
+                        tmp = re.split(r'\n\s*', body)
+                        idx = tmp.index('return-void')
+                        start = tmp[:idx]
+                        end = tmp[idx + 1:]
+                        start.extend(snippet)
+                        start.extend(end)
+                        snippet = start.copy()
+
+        return snippet
+
+    def run_smali(self, args, body):
+        '''执行解密方法
+        '''
+        #         {'v1': 86, 'v3': 47, 'v9': 20, 'v5': 67, 'v7': 82,
+        #             'v4': 9, 'v0': 1, 'v10': 0, 'v11': 56, 'v8': 20902}
+        # invoke - static {v3, v4, v5}, Lcom / ice / jake / a
+        # ->a(III)Ljava / lang / String
+        # 初始化 args
+        print(args)
+        # 如果参数获取失败，则退出
+
+        from smaliemu.emulator import Emulator
+
+        emu2 = Emulator()
+
+        snippet = body.split('\n')
+        new_snippet = snippet.copy()
+        clz_sigs = set()
+        has_arr = False
+        prog = re.compile(r'^.*, (.*?)->.*$')
+        for line in new_snippet:
+            if 'sget' in line:
+                clz_sigs.add(prog.match(line).groups()[0])
+                if ':[' in line:
+                    has_arr = True
+
+        for clz_sig in clz_sigs:
+            pass
+            # mtds = self.smali_files_dict[clz_sig].methods_dict
+            # if '<clinit>()V' in mtds:
+            #     body = mtds['<clinit>()V'].body
+            #     tmp = re.split(r'\n\s*', body)
+            #     idx = tmp.index('return-void')
+            #     start = tmp[:idx]
+            #     end = tmp[idx + 1:]
+            #     start.extend(snippet)
+            #     start.extend(end)
+            #     snippet = start.copy()
+
+            # 初始化解密方法体
+            # 获取方法体
+            # 检测方法体，如果存在sget-object，则需要去对应的smalifile拷贝对应类的成员变量初始化方法内容
+            # 合并方法体
+        ret = emu2.call(snippet, args,  thrown=False)
+        if ret:
+            try:
+                print(ret)
+            except Exception:
+                print(ret.encode('utf-8'))
+
+        else:
+            print('Not result.')
+
+        # 执行解密
+        # 返回结果
+
     def convert_args(self, typ8, value):
         '''Convert the value of register/argument to json format.'''
+        if value == None:
+            return None
         if typ8 == 'I':
+            print(value)
+            if not isinstance(value, int):
+                return None
             return 'I:' + str(value)
 
         if typ8 == 'C':
@@ -216,7 +353,7 @@ class TEMPLET(Plugin):
                 byte_arr.append(item)
             return '[C:' + str(byte_arr)
 
-        print(typ8)
+        print('不支持该类型', typ8, value)
 
     def init_array_datas(self, body):
         array_datas = {}

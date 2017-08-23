@@ -4,14 +4,14 @@
 # ('v1', 'v2', 'v5', 'Lcom/skt/pig/UserInterface', 'a', 'III')
 
 -  double1:
-    enabled: 1
+    enabled: 0
     protos:
       - D
     pattern:
       - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((D)\)
       - Ljava/lang/String;\s*
 -  double2:
-    enabled: 1
+    enabled: 0
     protos:
       - D
       - D    
@@ -19,7 +19,7 @@
       - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((DD)\)
       - Ljava/lang/String;\s*
 -  double3:
-    enabled: 1
+    enabled: 0
     protos:
       - D
       - D
