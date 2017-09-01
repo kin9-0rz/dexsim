@@ -41,11 +41,12 @@ class Plugin(object):
     # smali methods witch have been update
     smali_mtd_updated_set = set()
 
-    def __init__(self, driver, methods, smali_files):
+    def __init__(self, driver, methods, smalidir):
         self.make_changes = False
         self.driver = driver
         self.methods = methods
-        self.smali_files = smali_files
+        self.smalidir = smalidir
+        # self.smali_files = smali_files
         self.emu = Emulator()
 
     def get_arguments_from_clinit(self, field):
@@ -88,7 +89,8 @@ class Plugin(object):
         mro_statement = re.search(self.MOVE_RESULT_OBJECT, line).group()
         return mro_statement[mro_statement.rindex(' ') + 1:]
 
-    def get_json_item(self, cls_name, mtd_name, args):
+    @staticmethod
+    def get_json_item(cls_name, mtd_name, args):
         item = {'className': cls_name,
                 'methodName': mtd_name,
                 'arguments': args}
@@ -139,10 +141,10 @@ class Plugin(object):
         if isinstance(outputs, str):
             return
 
-        # try:
-        #     print(outputs)
-        # except UnicodeEncodeError:
-        #     print(str(outputs).encode('utf-8'))
+        try:
+            print(outputs)
+        except UnicodeEncodeError:
+            print(str(outputs).encode('utf-8'))
 
         for key, value in outputs.items():
             if 'success' not in value:
@@ -170,8 +172,6 @@ class Plugin(object):
                 item[0].modified = True
                 self.make_changes = True
 
-                self.smali_mtd_updated_set.add(item[0].descriptor)
-
         self.smali_files_update()
 
     def clear(self):
@@ -183,5 +183,5 @@ class Plugin(object):
             write changes to smali files
         '''
         if self.make_changes:
-            for smali_file in self.smali_files:
-                smali_file.update()
+            for sf in self.smalidir:
+                sf.update()

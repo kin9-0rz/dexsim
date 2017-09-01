@@ -27,3 +27,12 @@
     pattern:
       - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((III)\)
       - Ljava/lang/String;\s*
+-  ISI:
+    enabled: 1
+    protos:
+      - I
+      - S
+      - I
+    pattern:
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((ISI)\)
+      - Ljava/lang/String;\s*

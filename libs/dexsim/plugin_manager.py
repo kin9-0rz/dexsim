@@ -9,10 +9,11 @@ class PluginManager(object):
 
     plugin_dir = 'plugins'
 
-    def __init__(self, driver, methods, smali_files):
+    def __init__(self, driver, methods, smalidir):
         self.driver = driver
         self.methods = methods
-        self.smali_files = smali_files
+        # self.smali_files = smali_files
+        self.smalidir = smalidir
 
         self.plugin_filenames = self.__get_plugin_filenames()
         self.__plugins = []
@@ -58,4 +59,4 @@ class PluginManager(object):
                     continue
 
                 self.__plugins.append(clazz(self.driver, self.methods,
-                                            self.smali_files))
+                                            self.smalidir))
