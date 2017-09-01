@@ -67,7 +67,7 @@ class Driver:
             print(output)
             return
 
-        # print(output)
+        print(output)
 
         tempdir = tempfile.gettempdir()
         output_path = os.path.join(tempdir, 'output.json')
