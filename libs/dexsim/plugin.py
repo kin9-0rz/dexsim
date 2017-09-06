@@ -89,6 +89,41 @@ class Plugin(object):
         mro_statement = re.search(self.MOVE_RESULT_OBJECT, line).group()
         return mro_statement[mro_statement.rindex(' ') + 1:]
 
+    def pre_process(self, snippet):
+        '''
+            预处理 sget指令
+        '''
+        emu2 = Emulator()
+        args = {}
+
+        clz_sigs = set()
+        field_desc_prog = re.compile(r'^.*, (.*?->.*)$')
+        for line in snippet:
+            if 'sget' in line:
+                field_desc = field_desc_prog.match(line).groups()[0]
+                field = self.smalidir.get_field(field_desc)
+                if field:
+                    value = field.get_value()
+                    if value:
+                        args.update({field_desc: value})
+                        continue
+                clz_sigs.add(field_desc.split('->')[0])
+
+        for clz_sig in clz_sigs:
+            mtd = self.smalidir.get_method(clz_sig, '<clinit>()V')
+            if mtd:
+                body = mtd.get_body()
+                tmp = re.split(r'\n\s*', body)
+                emu2.call(tmp, thrown=False)
+                args.update(emu2.vm.variables)
+
+                for (key, value) in emu2.vm.variables.items():
+                    if clz_sig in key:
+                        field = self.smalidir.get_field(key)
+                        field.set_value(value)
+
+        return args
+
     @staticmethod
     def get_json_item(cls_name, mtd_name, args):
         item = {'className': cls_name,
