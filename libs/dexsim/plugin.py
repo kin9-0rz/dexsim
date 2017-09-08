@@ -195,7 +195,7 @@ class Plugin(object):
 
             # json_item, mtd, old_content, rtn_name
             for item in self.target_contexts[key]:
-                old_body = item[0].body
+                old_body = item[0].get_body()
                 old_content = item[1]
                 new_content = item[2] % value[1]
 
@@ -203,8 +203,8 @@ class Plugin(object):
                 if outputs[key][1] == 'null':
                     continue
 
-                item[0].body = old_body.replace(old_content, new_content)
-                item[0].modified = True
+                item[0].set_body(old_body.replace(old_content, new_content))
+                item[0].set_modified(True)
                 self.make_changes = True
 
         self.smali_files_update()
