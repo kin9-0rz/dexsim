@@ -12,11 +12,11 @@ __all__ = ["TEMPLET"]
 class TEMPLET(Plugin):
     """Load templets to decode apk/dex."""
     name = "TEMPLET"
-    enabled = False
+    enabled = True
     tname = None
 
-    def __init__(self, driver, methods, smali_files):
-        Plugin.__init__(self, driver, methods, smali_files)
+    def __init__(self, driver, methods, smalidir):
+        Plugin.__init__(self, driver, methods, smalidir)
 
     def run(self):
         print('run Plugin: %s' % self.name, end=' -> ')
@@ -53,135 +53,141 @@ class TEMPLET(Plugin):
 
         argument_is_arr = 'arr' in self.tname
 
-        for mtd in self.methods:
-            registers = {}
-            array_datas = {}
+        for sf in self.smalidir:
+            for mtd in sf.get_methods():
+                registers = {}
+                array_datas = {}
 
-            if 'q;->run()' not in mtd.descriptor:
-                continue
-
-            print(mtd.descriptor)
-
-            result = templet_prog.search(mtd.body)
-            if not result:
-                continue
-
-            if argument_is_arr:
-                array_datas = self.init_array_datas(mtd.body)
-                if not array_datas:
+                if 'q;->run()' not in str(mtd):
                     continue
 
-            lines = re.split(r'\n\s*', mtd.body)
+                print(str(mtd))
 
-            tmp_bodies = lines.copy()
-
-            cls_name = None
-            mtd_name = None
-            old_content = None
-
-            lidx = -1
-            json_item = None
-            for line in lines:
-                print(line)
-                lidx += 1
-                result_mtd = templet_prog.search(line)
-                if not result_mtd:
+                result = templet_prog.search(mtd.get_body())
+                if not result:
                     continue
 
-                if 'Ljava/lang/String;->valueOf(I)Ljava/lang/String;' in line:
-                    continue
-
-                if 'Ljava/lang/Integer;->toHexString(I)Ljava/lang/String;' in line:
-                    continue
-
-                mtd_groups = result_mtd.groups()
-                cls_name = mtd_groups[-3][1:].replace('/', '.')
-                mtd_name = mtd_groups[-2]
-                # print(mtd_groups)
-
-                register_names = []
-                # invoke - static {v14, v16},
-                if 'range' not in line:
-                    register_names.extend(mtd_groups[0].split(', '))
-                elif 'range' in line:
-                    # invoke-static/range {v14 .. v16}
-                    tmp = re.match(r'v(\d+).*?(\d+)', mtd_groups[0])
-                    if not tmp:
+                if argument_is_arr:
+                    array_datas = self.init_array_datas(mtd.get_body())
+                    if not array_datas:
                         continue
-                    start, end = tmp.groups()
-                    for rindex in range(int(start), int(end) + 1):
-                        register_names.append('v' + str(rindex))
 
-                # self.get_register_names(line)
+                lines = re.split(r'\n', mtd.get_body())
 
-                try:
-                    tmpx = lines[:lidx]
-                    print('*' * 100)
-                    print(tmpx[-1])
-                    print('*' * 100)
-                    exit()
-                    registers = self.get_registers(lines[:lidx])
-                except TIMEOUT_EXCEPTION as ex:
-                    print(ex)
-                    print('超时，优化或者使用其他方式获取')
-                    continue
+                tmp_bodies = lines.copy()
 
-                print(registers)
+                cls_name = None
+                mtd_name = None
+                old_content = None
 
-                # 参数获取 "arguments": ["I:198", "I:115", "I:26"]}
-                arguments = []
-                args = {}  # the parameter of smali method
-                ridx = -1
-                for item in protos:
-                    ridx += 1
-                    key = 'p' + str(ridx)
-                    rname = register_names[ridx]
-                    if rname not in registers:
-                        break
-                    value = registers[register_names[ridx]]
-                    argument = self.convert_args(item, value)
-                    if argument is None:
-                        break
-                    arguments.append(argument)
-                    args[key] = argument.split(':')[1]
+                lidx = -1
+                json_item = None
+                for line in lines:
+                    print(line)
+                    lidx += 1
+                    result_mtd = templet_prog.search(line)
+                    if not result_mtd:
+                        continue
 
-                if len(arguments) != len(protos):
-                    continue
+                    if 'Ljava/lang/String;->valueOf(I)Ljava/lang/String;' in line:
+                        continue
 
-                # 尝试直接调用smali方法解密
-                # 如果成功，则体会
-                # 失败则考虑反射调用
-                # self.smali_call(cls_name, mtd_name, args)
+                    if 'Ljava/lang/Integer;->toHexString(I)Ljava/lang/String;' in line:
+                        continue
 
-                json_item = self.get_json_item(cls_name, mtd_name,
-                                               arguments)
-                print(json_item)
+                    mtd_groups = result_mtd.groups()
+                    cls_name = mtd_groups[-3][1:].replace('/', '.')
+                    mtd_name = mtd_groups[-2]
+                    # print(mtd_groups)
 
-                # make the line unique, # {id}_{rtn_name}
-                old_content = '# %s' % json_item['id']
+                    # 参数处理
 
-                # If next line is move-result-object, get return
-                # register name.
-                res = move_result_obj_prog.search(lines[lidx + 1])
-                if res:
-                    rtn_name = res.groups()[0]
-                    # To avoid '# abc_v10' be replace with '# abc_v1'
-                    old_content = old_content + '_' + rtn_name + 'X'
-                    self.append_json_item(json_item, mtd, old_content,
-                                          rtn_name)
-                else:
-                    old_content = old_content + '_X'
-                    self.append_json_item(json_item, mtd, old_content, None)
+                    register_names = []
+                    # invoke - static {v14, v16},
+                    if 'range' not in line:
+                        register_names.extend(mtd_groups[0].split(', '))
+                    elif 'range' in line:
+                        # invoke-static/range {v14 .. v16}
+                        tmp = re.match(r'v(\d+).*?(\d+)', mtd_groups[0])
+                        if not tmp:
+                            continue
+                        start, end = tmp.groups()
+                        for rindex in range(int(start), int(end) + 1):
+                            register_names.append('v' + str(rindex))
 
-                tmp_bodies[lidx] = old_content
+                    # self.get_register_names(line)
 
-            mtd.body = '\n'.join(tmp_bodies)
+                    try:
+                        tmpx = lines[:lidx]
+                        print('*' * 100)
+                        print(tmpx[-1])
+                        print('*' * 100)
+                        exit()
+                        registers = self.get_registers(lines[:lidx])
+                    except TIMEOUT_EXCEPTION as ex:
+                        print(ex)
+                        print('超时，优化或者使用其他方式获取')
+                        continue
 
-        self.optimize()
-        self.clear()
+                    print(registers)
+
+                    # 参数获取 "arguments": ["I:198", "I:115", "I:26"]}
+                    arguments = []
+                    args = {}  # the parameter of smali method
+                    ridx = -1
+                    for item in protos:
+                        ridx += 1
+                        key = 'p' + str(ridx)
+                        rname = register_names[ridx]
+                        if rname not in registers:
+                            break
+                        value = registers[register_names[ridx]]
+                        argument = self.convert_args(item, value)
+                        if argument is None:
+                            break
+                        arguments.append(argument)
+                        args[key] = argument.split(':')[1]
+
+                    if len(arguments) != len(protos):
+                        continue
+
+                    # 解密处理
+
+                    # 尝试直接调用smali方法解密
+                    # 如果成功，则体会
+                    # 失败则考虑反射调用
+                    # self.smali_call(cls_name, mtd_name, args)
+
+                    json_item = self.get_json_item(cls_name, mtd_name,
+                                                   arguments)
+                    print(json_item)
+
+                    # make the line unique, # {id}_{rtn_name}
+                    old_content = '# %s' % json_item['id']
+
+                    # If next line is move-result-object, get return
+                    # register name.
+                    res = move_result_obj_prog.search(lines[lidx + 1])
+                    if res:
+                        rtn_name = res.groups()[0]
+                        # To avoid '# abc_v10' be replace with '# abc_v1'
+                        old_content = old_content + '_' + rtn_name + 'X'
+                        self.append_json_item(json_item, mtd, old_content,
+                                              rtn_name)
+                    else:
+                        old_content = old_content + '_X'
+                        self.append_json_item(
+                            json_item, mtd, old_content, None)
+
+                    tmp_bodies[lidx] = old_content
+
+                mtd.set_body('\n'.join(tmp_bodies))
+
+            self.optimize()
+            self.clear()
 
     def get_register_names(self, line):
-        '''invoke-static 
+        '''invoke-static
         '''
         print(line)
         names = re.search(r'{(.*?)}', line).groups()[0]
@@ -308,7 +314,7 @@ class TEMPLET(Plugin):
                 for mtd in sf.methods:
                     mtd_sign = mtd.signature
                     if '<clinit>()V' in mtd_sign:
-                        body = mtd.body
+                        body = mtd.get_body()
                         tmp = re.split(r'\n\s*', body)
                         idx = tmp.index('return-void')
                         start = tmp[:idx]
@@ -317,7 +323,7 @@ class TEMPLET(Plugin):
                         start.extend(end)
                         snippet = start.copy()
                     elif '<init>()V' in mtd_sign:
-                        body = mtd.body
+                        body = mtd.get_body()
                         tmp = re.split(r'\n\s*', body)
                         idx = tmp.index('return-void')
                         start = tmp[:idx]
