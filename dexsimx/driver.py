@@ -7,7 +7,7 @@ import json
 from powerzip import PowerZip
 from adbwrapper import ADB
 
-from libs.dexsim import logs
+from libs.main import DEBUG
 
 
 class Driver:
@@ -69,7 +69,7 @@ class Driver:
             print(output)
             return
 
-        if logs.DEBUG:
+        if DEBUG:
             print(output)
 
         tempdir = tempfile.gettempdir()
@@ -85,7 +85,7 @@ class Driver:
             else:
                 ofile.seek(0)
                 result = json.load(ofile)
-        if not logs.DEBUG:
+        if not DEBUG:
             self.adb.shell_command(['rm', '/data/local/od-output.json'])
             self.adb.shell_command(['rm', '/data/local/od-targets.json'])
         else:

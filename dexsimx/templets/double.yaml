@@ -5,7 +5,6 @@
 
 -  double1:
     enabled: 0
-    type: 2
     protos:
       - D
     pattern:
@@ -13,16 +12,14 @@
       - Ljava/lang/String;\s*
 -  double2:
     enabled: 0
-    type: 2
     protos:
       - D
-      - D
+      - D    
     pattern:
       - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((DD)\)
       - Ljava/lang/String;\s*
 -  double3:
     enabled: 0
-    type: 2
     protos:
       - D
       - D

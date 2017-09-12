@@ -12,11 +12,17 @@ import powerzip
 
 from smafile import SmaliFile
 
-from libs.dexsim.driver import Driver
-from libs.dexsim.oracle import Oracle
 
-from libs.dexsim import logs
+print(sys.path)
 
+
+from dexsim.driver import Driver
+from dexsim.oracle import Oracle
+
+
+import dexsim
+
+DEBUG = False
 
 main_path = ''
 for path in sys.path:
@@ -67,13 +73,13 @@ def smali(smali_dir, output_file='out.dex'):
 
 
 def main(args):
+    global DEBUG
     include_str = args.i
 
     # Debug mode
-    logs.DEBUG = args.d
-    # logs.DEBUG = DEBUG
+    DEBUG = args.d
     smali_dir = None
-    if logs.DEBUG:
+    if DEBUG:
         smali_dir = os.path.join(os.path.abspath(os.curdir), 'smali')
     else:
         smali_dir = tempfile.mkdtemp()
@@ -133,7 +139,7 @@ def dexsim_dex(dex_file, smali_dir, include_str, output_dex):
         smali(smali_dir,
               os.path.splitext(os.path.basename(dex_file))[0] + '.sim.dex')
 
-    if not logs.DEBUG:
+    if not DEBUG:
         shutil.rmtree(smali_dir)
 
 

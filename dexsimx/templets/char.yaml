@@ -3,30 +3,27 @@
 # invoke-static {v1, v2, v5}, Lcom/skt/pig/UserInterface;->a(III)Ljava/lang/String;
 # ('v1', 'v2', 'v5', 'Lcom/skt/pig/UserInterface', 'a', 'III')
 
--  double1:
-    enabled: 0
-    type: 2
+-  char1:
+    enabled: 1
     protos:
-      - D
+      - C
     pattern:
-      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((D)\)
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((C)\)
       - Ljava/lang/String;\s*
--  double2:
-    enabled: 0
-    type: 2
+-  char2:
+    enabled: 1
     protos:
-      - D
-      - D
+      - C
+      - C
     pattern:
-      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((DD)\)
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((CC)\)
       - Ljava/lang/String;\s*
--  double3:
-    enabled: 0
-    type: 2
-    protos:
-      - D
-      - D
-      - D
+-  char3:
+    enabled: 1
+    protos: 
+      - C
+      - C
+      - C
     pattern:
-      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((DDD)\)
+      - invoke-static[/\s\w]+{(.*?)},\s+([^;]+?);->(.*?)\((CCC)\)
       - Ljava/lang/String;\s*
