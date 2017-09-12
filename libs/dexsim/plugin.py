@@ -6,6 +6,8 @@ import re
 
 from smaliemu.emulator import Emulator
 
+from libs.dexsim import logs
+
 
 class Plugin(object):
     name = 'Plugin'
@@ -142,9 +144,9 @@ class Plugin(object):
             # const-string v1, "Decode String"
             # invoke-static {v0, v1}, Landroid/util/Log;->d(
             # Ljava/lang/String;Ljava/lang/String;)I
-            new_content = ('const-string v0, "Dexsim"\n'
-                           'const-string v1, %s\n'
-                           'invoke-static {v0, v1}, Landroid/util/Log;->d'
+            new_content = ('const-string v10, "Dexsim"\n'
+                           'const-string v11, %s\n'
+                           'invoke-static {v10, v11}, Landroid/util/Log;->d'
                            '(Ljava/lang/String;Ljava/lang/String;)I\n')
 
         if mid not in self.target_contexts:
@@ -176,10 +178,11 @@ class Plugin(object):
         if isinstance(outputs, str):
             return
 
-        try:
-            print(outputs)
-        except UnicodeEncodeError:
-            print(str(outputs).encode('utf-8'))
+        if logs.DEBUG:
+            try:
+                print(outputs)
+            except UnicodeEncodeError:
+                print(str(outputs).encode('utf-8'))
 
         for key, value in outputs.items():
             if 'success' not in value:
@@ -190,8 +193,6 @@ class Plugin(object):
 
             if len(value[1]) == 2:
                 continue
-
-            # print(bytearray(value[1], encoding='utf-8'))
 
             # json_item, mtd, old_content, rtn_name
             for item in self.target_contexts[key]:

@@ -33,6 +33,9 @@ class TEMPLET(Plugin):
                     for key, value in item.items():
                         self.tname = key
 
+                        if key != 'byte_arr_1':
+                            continue
+
                         if not value['enabled']:
                             print('Not Load templet:', self.tname)
                             continue
@@ -43,9 +46,136 @@ class TEMPLET(Plugin):
                         else:
                             protos = []
                         ptn = ''.join(value['pattern'])
-                        self.__process(protos, ptn)
+                        dtype = value['type']
 
-    def __process(self, protos, pattern):
+        # 1. 使用参数 + 函数调用的方式处理 - 精准匹配的方式
+        # 2. 解密函数，前几行运算 -  - 有可能运算出现乱码
+        # 3. 所有代码执行运算
+                        if dtype == 1:
+                            self.__process_quickly(protos, ptn)
+                        elif dtype == 2:
+                            self.__process_slowly(protos, ptn)
+
+    def get_clz_mtd_rtn_name(self, line):
+        '''
+            class_name, method_name, return_variable_name
+        '''
+        clz_name, mtd_name = re.search(
+            r'invoke-static.*?{.*?}, (.*?);->(.*?)\(.*?\)Ljava/lang/String;', line).groups()
+        clz_name = clz_name[1:].replace('/', '.')
+
+        prog = re.compile(self.MOVE_RESULT_OBJECT)
+        mro_statement = prog.search(line).group()
+        rtn_name = mro_statement[mro_statement.rindex(' ') + 1:]
+        return (clz_name, mtd_name, rtn_name)
+
+    def __process_quickly(self, protos, pattern):
+        '''模板中带参数，精准匹配，速度快。'''
+        prog = re.compile(pattern)
+
+        arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
+
+        for sf in self.smalidir:
+            for mtd in sf.get_methods():
+                array_data_content = []
+                result = arr_data_prog.search(mtd.get_body())
+                if result:
+                    array_data_content = re.split(r'\n\s', result.group())
+
+                for i in prog.finditer(mtd.get_body()):
+                    old_content = i.group()
+                    groups = i.groups()
+
+                    cls_name = groups[-3][1:].replace('/', '.')
+                    mtd_name = groups[-2]
+                    rtn_name = groups[-1]
+                    print(groups)
+
+                    snippet = re.split(r'\n\s', old_content)[:-2]
+
+                    snippet.extend(array_data_content)
+
+                    self.emu.call(snippet, thrown=False)
+
+                    rnames = self.get_rnames_1(old_content, groups[-4])
+
+                    arguments = self.get_arguments_1(
+                        protos, rnames, self.emu.vm.variables)
+
+                    if not arguments:
+                        continue
+
+                    json_item = self.get_json_item(
+                        cls_name, mtd_name, arguments)
+
+                    self.append_json_item(
+                        json_item, mtd, old_content, rtn_name)
+
+        self.optimize()
+        self.clear()
+
+    def get_rnames_1(self, line, result):
+        # register_names
+        rnames = []
+        # invoke - static {v14, v16},
+        if 'range' not in line:
+            rnames.extend(result.split(', '))
+        elif 'range' in line:
+            # invoke-static/range {v14 .. v16}
+            tmp = re.match(r'v(\d+).*?(\d+)', result)
+            if not tmp:
+                return
+            start, end = tmp.groups()
+            for rindex in range(int(start), int(end) + 1):
+                rnames.append('v' + str(rindex))
+
+        return rnames
+
+    def get_arguments_1(self, protos, rnames, registers):
+         # 参数获取 "arguments": ["I:198", "I:115", "I:26"]}
+        arguments = []
+        ridx = -1
+        for item in protos:
+            ridx += 1
+            key = 'p' + str(ridx)
+            rname = rnames[ridx]
+            if rname not in registers:
+                break
+            value = registers[rnames[ridx]]
+            argument = self.convert_args(item, value)
+            if argument is None:
+                break
+            arguments.append(argument)
+
+        if len(arguments) == len(protos):
+            return arguments
+
+    def get_cmr_names(self, line, results):
+        mtd_groups = results.groups()
+        cls_name = mtd_groups[-3][1:].replace('/', '.')
+        mtd_name = mtd_groups[-2]
+
+        # register_names
+        rnames = []
+        # invoke - static {v14, v16},
+        if 'range' not in line:
+            rnames.extend(mtd_groups[0].split(', '))
+        elif 'range' in line:
+            # invoke-static/range {v14 .. v16}
+            tmp = re.match(r'v(\d+).*?(\d+)', mtd_groups[0])
+            if not tmp:
+                return
+            start, end = tmp.groups()
+            for rindex in range(int(start), int(end) + 1):
+                rnames.append('v' + str(rindex))
+        return cls_name, mtd_name, rnames
+
+    def __process_slowly(self, protos, pattern):
+        '''
+        模板仅仅匹配解密方法的本身。
+        如果方法体存在大量代码，可能需要执行大量的smali指令，相对比较慢。
+        但是，相对精准匹配，比较通用。
+        '''
         templet_prog = re.compile(pattern)
 
         move_result_obj_ptn = r'move-result-object ([vp]\d+)'
@@ -53,28 +183,26 @@ class TEMPLET(Plugin):
 
         argument_is_arr = 'arr' in self.tname
 
+        arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
+
         for sf in self.smalidir:
             for mtd in sf.get_methods():
                 registers = {}
-                array_datas = {}
 
-                if 'q;->run()' not in str(mtd):
-                    continue
+                # 如果存在数组
+                array_data_content = []
+                result = arr_data_prog.search(mtd.get_body())
+                if result:
+                    array_data_content = re.split(r'\n\s', result.group())
 
-                print(str(mtd))
-
-                result = templet_prog.search(mtd.get_body())
-                if not result:
-                    continue
-
-                if argument_is_arr:
-                    array_datas = self.init_array_datas(mtd.get_body())
-                    if not array_datas:
-                        continue
-
-                lines = re.split(r'\n', mtd.get_body())
+                lines = re.split(r'\n\s*', mtd.get_body())
 
                 tmp_bodies = lines.copy()
+
+                flag = False
+                new_body = []
+                snippet = []
+                args = {}
 
                 cls_name = None
                 mtd_name = None
@@ -83,91 +211,80 @@ class TEMPLET(Plugin):
                 lidx = -1
                 json_item = None
                 for line in lines:
-                    print(line)
+                    snippet.append(line)
                     lidx += 1
+
                     result_mtd = templet_prog.search(line)
                     if not result_mtd:
+                        new_body.append(line)
                         continue
 
                     if 'Ljava/lang/String;->valueOf(I)Ljava/lang/String;' in line:
+                        new_body.append(line)
                         continue
 
                     if 'Ljava/lang/Integer;->toHexString(I)Ljava/lang/String;' in line:
+                        new_body.append(line)
                         continue
 
-                    mtd_groups = result_mtd.groups()
-                    cls_name = mtd_groups[-3][1:].replace('/', '.')
-                    mtd_name = mtd_groups[-2]
-                    # print(mtd_groups)
+                    cls_name, mtd_name, rnames = self.get_cmr_names(
+                        line, result_mtd)
 
-                    # 参数处理
+                    # 初始化寄存器
+                    del snippet[-1]
+                    snippet.extend(array_data_content)
+                    args.update(self.pre_process(snippet))
 
-                    register_names = []
-                    # invoke - static {v14, v16},
-                    if 'range' not in line:
-                        register_names.extend(mtd_groups[0].split(', '))
-                    elif 'range' in line:
-                        # invoke-static/range {v14 .. v16}
-                        tmp = re.match(r'v(\d+).*?(\d+)', mtd_groups[0])
-                        if not tmp:
-                            continue
-                        start, end = tmp.groups()
-                        for rindex in range(int(start), int(end) + 1):
-                            register_names.append('v' + str(rindex))
-
-                    # self.get_register_names(line)
-
+                    # 这里有一个问题，如果解密函数2种都存在，可能会产生混乱
+                    # 如果是const 建议直接匹配比较好 - 速度较快
+                    # 如果是其他类型，则使用其他方式比较好
+                    # 不大可能有完全通用的方式
                     try:
-                        tmpx = lines[:lidx]
-                        print('*' * 100)
-                        print(tmpx[-1])
-                        print('*' * 100)
-                        exit()
-                        registers = self.get_registers(lines[:lidx])
+                        registers = self.get_registers(snippet, args, rnames)
+                        args = registers if registers else args
                     except TIMEOUT_EXCEPTION as ex:
-                        print(ex)
-                        print('超时，优化或者使用其他方式获取')
+                        print(str(mtd))
+                        snippet.clear()
                         continue
 
-                    print(registers)
+                    snippet.clear()
+
+                    if not registers:
+                        continue
 
                     # 参数获取 "arguments": ["I:198", "I:115", "I:26"]}
                     arguments = []
-                    args = {}  # the parameter of smali method
+                    # args = {}  # the parameter of smali method
                     ridx = -1
                     for item in protos:
                         ridx += 1
                         key = 'p' + str(ridx)
-                        rname = register_names[ridx]
+                        rname = rnames[ridx]
                         if rname not in registers:
                             break
-                        value = registers[register_names[ridx]]
+                        value = registers[rnames[ridx]]
                         argument = self.convert_args(item, value)
                         if argument is None:
                             break
                         arguments.append(argument)
-                        args[key] = argument.split(':')[1]
+                        # args[key] = argument.split(':')[1]
 
                     if len(arguments) != len(protos):
                         continue
 
-                    # 解密处理
-
-                    # 尝试直接调用smali方法解密
-                    # 如果成功，则体会
-                    # 失败则考虑反射调用
+                    # 解密方式1 - smaliemu 执行
                     # self.smali_call(cls_name, mtd_name, args)
 
                     json_item = self.get_json_item(cls_name, mtd_name,
                                                    arguments)
-                    print(json_item)
 
                     # make the line unique, # {id}_{rtn_name}
                     old_content = '# %s' % json_item['id']
 
+                    # 解密方式2 - 推送手机执行
                     # If next line is move-result-object, get return
                     # register name.
-                    res = move_result_obj_prog.search(lines[lidx + 1])
+                    res = move_result_obj_prog.search(lines[lidx + 2])
                     if res:
                         rtn_name = res.groups()[0]
                         # To avoid '# abc_v10' be replace with '# abc_v1'
@@ -186,23 +303,27 @@ class TEMPLET(Plugin):
             self.optimize()
             self.clear()
 
-    def get_register_names(self, line):
-        '''invoke-static
-        '''
-        print(line)
-        names = re.search(r'{(.*?)}', line).groups()[0]
-        if 'range' not in line:
-            # invoke - static {v14, v16},
-            return names.split(', ')
-        elif 'range' in line:
-            # invoke-static/range {v14 .. v16}
-            print(names)
-            # tmp = re.match(r'v(\d+).*?(\d+)', mtd_groups[0])
-            # if not tmp:
-            #     continue
-            # start, end = tmp.groups()
-            # for rindex in range(int(start), int(end) + 1):
-            #     register_names.append('v' + str(rindex))
+    @timeout(5)
+    def get_registers(self, snippet, args, rnames):
+        from smaliemu.emulator import Emulator
+        emu2 = Emulator()
+        emu2.call(snippet[-5:], args=args, thrown=False)
+
+        result = self.varify_args(emu2.vm.variables, rnames)
+        if result:
+            return emu2.vm.variables
+
+        emu2.call(snippet, args=args, thrown=False)
+        result = self.varify_args(emu2.vm.variables, rnames)
+        if result:
+            return emu2.vm.variables
+
+    def varify_args(self, args, rnames):
+        for k in rnames:
+            value = args.get(k, None)
+            if value is None:
+                return False
+        return True
 
     @timeout(5)
     def smali_call(self, cls_name, mtd_name, args):
@@ -264,75 +385,8 @@ class TEMPLET(Plugin):
             # 执行解密
             # 返回结果
 
-    def convert_to_smali_parameter(arguments):
+    def convert_to_smali_parameter(self, arguments):
         pass
-
-    @timeout(5)
-    def get_registers(self, lines):
-        from smaliemu.emulator import Emulator
-        emu2 = Emulator()
-        snippet = lines.copy()
-        print('\n'.join(snippet))
-
-        exit()
-        raise Exception
-
-        snippet = self.merge_body(lines)
-
-        for line in snippet.copy():
-            if 'iget-boolean' in line:
-                snippet.remove(line)
-            elif 'const-class' in line:
-                snippet.remove(line)
-            elif line.startswith('if-'):
-                snippet.remove(line)
-            elif line.startswith('return-'):
-                snippet.remove(line)
-            elif line.startswith(':try_end'):
-                snippet.remove(line)
-            elif line.startswith('goto'):
-                snippet.remove(line)
-
-        # FIXME 存在执行时间过长的问题
-        print('\n'.join(snippet))
-        emu2.call(snippet, thrown=False)
-
-        return emu2.vm.variables
-
-    def merge_body(self, snippet):
-        clz_sigs = set()
-        prog = re.compile(r'^.*, (.*?)->.*$')
-        for line in snippet:
-            if 'sget' in line:
-                clz_sigs.add(prog.match(line).groups()[0])
-
-        for clz_sig in clz_sigs:
-            for sf in self.smali_files:
-                if clz_sig != sf.sign:
-                    continue
-
-                for mtd in sf.methods:
-                    mtd_sign = mtd.signature
-                    if '<clinit>()V' in mtd_sign:
-                        body = mtd.get_body()
-                        tmp = re.split(r'\n\s*', body)
-                        idx = tmp.index('return-void')
-                        start = tmp[:idx]
-                        end = tmp[idx + 1:]
-                        start.extend(snippet)
-                        start.extend(end)
-                        snippet = start.copy()
-                    elif '<init>()V' in mtd_sign:
-                        body = mtd.get_body()
-                        tmp = re.split(r'\n\s*', body)
-                        idx = tmp.index('return-void')
-                        start = tmp[:idx]
-                        end = tmp[idx + 1:]
-                        start.extend(snippet)
-                        start.extend(end)
-                        snippet = start.copy()
-
-        return snippet
 
     @staticmethod
     def convert_args(typ8, value):
@@ -387,21 +441,3 @@ class TEMPLET(Plugin):
             return '[C:' + str(byte_arr)
 
         print('不支持该类型', typ8, value)
-
-    def init_array_datas(self, body):
-        array_datas = {}
-
-        ptn2 = r'(:array_[\w\d]+)\s*.array-data[\w\W\s]+?.end array-data'
-        arr_data_prog = re.compile(ptn2)
-
-        for item in arr_data_prog.finditer(body):
-            array_data_content = re.split(r'\n\s*', item.group())
-            line = 'fill-array-data v0, %s' % item.groups()[0]
-            snippet = []
-            snippet.append(line)
-            snippet.append('return-object v0')
-            snippet.extend(array_data_content)
-            arr_data = self.emu.call(snippet)
-            array_datas[item.groups()[0]] = arr_data
-
-        return array_datas

@@ -17,7 +17,7 @@ class STRING_FUNC(Plugin):
     String, StringBuilder, StringBuffer等。
     '''
     name = "STRING_FUNC"
-    enabled = True
+    enabled = False
 
     def __init__(self, driver, methods, smalidir):
         self.emu = Emulator()
@@ -61,7 +61,7 @@ class STRING_FUNC(Plugin):
             except TIMEOUT_EXCEPTION as ex:
                 print(ex)
 
-    @timeout(5)
+    @timeout(3)
     def _process(self, ptn, mtd_filter):
         prog = re.compile(ptn)
 
@@ -102,6 +102,9 @@ class STRING_FUNC(Plugin):
 
                     if result:
                         flag = True
+                        if not isinstance(result, str):
+                            result = str(result)
+
                         new_line = 'const-string %s, "%s"' % (
                             rtname, result.encode('unicode-escape').decode())
                         if 'array' in new_body[-2]:

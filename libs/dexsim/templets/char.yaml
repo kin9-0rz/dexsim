@@ -5,6 +5,7 @@
 
 -  char1:
     enabled: 1
+    type: 2
     protos:
       - C
     pattern:
@@ -12,6 +13,7 @@
       - Ljava/lang/String;\s*
 -  char2:
     enabled: 1
+    type: 2
     protos:
       - C
       - C
@@ -20,7 +22,8 @@
       - Ljava/lang/String;\s*
 -  char3:
     enabled: 1
-    protos: 
+    type: 2
+    protos:
       - C
       - C
       - C
