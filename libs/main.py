@@ -93,7 +93,7 @@ def main(args):
     elif Magic(args.f).get_type() == 'apk':
         apk_path = args.f
 
-        if DEBUG:
+        if logs.DEBUG:
             tempdir = os.path.join(os.path.abspath(os.curdir), 'clztmp')
             if not os.path.exists(tempdir):
                 os.mkdir(tempdir)
@@ -117,7 +117,7 @@ def main(args):
 
         smali(smali_dir, dex_file)
         dexsim_dex(dex_file, smali_dir, include_str, output_dex)
-        if not DEBUG:
+        if not logs.DEBUG:
             shutil.rmtree(tempdir)
     else:
         dex_file = os.path.basename(args.f)

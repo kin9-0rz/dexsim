@@ -33,8 +33,8 @@ class TEMPLET(Plugin):
                     for key, value in item.items():
                         self.tname = key
 
-                        if key != 'byte_arr_1':
-                            continue
+                        # if key != 'str2':
+                        #     continue
 
                         if not value['enabled']:
                             print('Not Load templet:', self.tname)
@@ -89,7 +89,6 @@ class TEMPLET(Plugin):
                     cls_name = groups[-3][1:].replace('/', '.')
                     mtd_name = groups[-2]
                     rtn_name = groups[-1]
-                    print(groups)
 
                     snippet = re.split(r'\n\s', old_content)[:-2]
 
@@ -189,6 +188,9 @@ class TEMPLET(Plugin):
             for mtd in sf.get_methods():
                 registers = {}
 
+                # if 'e(JLjava/lang/Object;)I' not in str(mtd):
+                #     continue
+
                 # 如果存在数组
                 array_data_content = []
                 result = arr_data_prog.search(mtd.get_body())
@@ -211,6 +213,7 @@ class TEMPLET(Plugin):
                 lidx = -1
                 json_item = None
                 for line in lines:
+
                     snippet.append(line)
                     lidx += 1
 
@@ -218,6 +221,8 @@ class TEMPLET(Plugin):
                     if not result_mtd:
                         new_body.append(line)
                         continue
+
+                    print(line.encode())
 
                     if 'Ljava/lang/String;->valueOf(I)Ljava/lang/String;' in line:
                         new_body.append(line)
@@ -230,22 +235,28 @@ class TEMPLET(Plugin):
                     cls_name, mtd_name, rnames = self.get_cmr_names(
                         line, result_mtd)
 
+                    # print(cls_name.encode('utf-8'),
+                    #       mtd_name.encode('utf-8'), rnames)
+
                     # 初始化寄存器
                     del snippet[-1]
                     snippet.extend(array_data_content)
-                    args.update(self.pre_process(snippet))
+                    try:
+                        args.update(self.pre_process(snippet))
+                    except TIMEOUT_EXCEPTION:
+                        pass
+                    # for x in snippet:
+                    #     print(x.encode('utf-8'))
 
-                    # 这里有一个问题，如果解密函数2种都存在，可能会产生混乱
-                    # 如果是const 建议直接匹配比较好 - 速度较快
-                    # 如果是其他类型，则使用其他方式比较好
-                    # 不大可能有完全通用的方式
                     try:
                         registers = self.get_registers(snippet, args, rnames)
                         args = registers if registers else args
                     except TIMEOUT_EXCEPTION as ex:
-                        print(str(mtd))
                         snippet.clear()
                         continue
+
+                    # for k in registers:
+                    #     print(k.encode(), args[k])
 
                     snippet.clear()
 
@@ -277,6 +288,7 @@ class TEMPLET(Plugin):
 
                     json_item = self.get_json_item(cls_name, mtd_name,
                                                    arguments)
+                    # print(json_item)
 
                     # make the line unique, # {id}_{rtn_name}
                     old_content = '# %s' % json_item['id']
@@ -399,6 +411,12 @@ class TEMPLET(Plugin):
             if not isinstance(value, int):
                 return None
             return 'I:' + str(value)
+
+        if typ8 == 'B':
+            # print(value)
+            if not isinstance(value, int):
+                return None
+            return 'B:' + str(value)
 
         if typ8 == 'S':
             if not isinstance(value, int):

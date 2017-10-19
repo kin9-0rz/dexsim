@@ -7,6 +7,7 @@ import re
 from smaliemu.emulator import Emulator
 
 from libs.dexsim import logs
+from libs.dexsim.timeout import timeout
 
 
 class Plugin(object):
@@ -51,46 +52,47 @@ class Plugin(object):
         # self.smali_files = smali_files
         self.emu = Emulator()
 
-    def get_arguments_from_clinit(self, field):
-        sput_obj_prog = re.compile(r'([\w\W]+?)sput-object (v\d+), %s' %
-                                   re.escape(field))
-        arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
+    # def get_arguments_from_clinit(self, field):
+    #     sput_obj_prog = re.compile(r'([\w\W]+?)sput-object (v\d+), %s' %
+    #                                re.escape(field))
+    #     arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
 
-        for smali_file in self.smali_files:
-            if smali_file.class_name in field:
-                continue
+    #     for smali_file in self.smali_files:
+    #         if smali_file.class_name in field:
+    #             continue
 
-            for mtd in smali_file.methods:
-                arr = []
-                if mtd.name == '<clinit>':
-                    matchs = sput_obj_prog.search(mtd.body).groups()
-                    snippet = matchs[0]
+    #         for mtd in smali_file.methods:
+    #             arr = []
+    #             if mtd.name == '<clinit>':
+    #                 matchs = sput_obj_prog.search(mtd.body).groups()
+    #                 snippet = matchs[0]
 
-                    arr = re.split(r'\n+', snippet)[:-1]
-                    arr.append('return-object %s' % matchs[1])
-                    result = arr_data_prog.search(mtd.body)
-                    if result:
-                        array_data_content = re.split(r'\n+', result.group())
-                        arr.extend(array_data_content)
+    #                 arr = re.split(r'\n+', snippet)[:-1]
+    #                 arr.append('return-object %s' % matchs[1])
+    #                 result = arr_data_prog.search(mtd.body)
+    #                 if result:
+    #                     array_data_content = re.split(r'\n+', result.group())
+    #                     arr.extend(array_data_content)
 
-                    arr_data = self.emu.call(arr)
-                    if self.emu.vm.exceptions:
-                        break
+    #                 arr_data = self.emu.call(arr)
+    #                 if self.emu.vm.exceptions:
+    #                     break
 
-                    arguments = []
-                    byte_arr = []
-                    for item in arr_data:
-                        if item == '':
-                            item = 0
-                        byte_arr.append(item)
-                    arguments.append('[B:' + str(byte_arr))
+    #                 arguments = []
+    #                 byte_arr = []
+    #                 for item in arr_data:
+    #                     if item == '':
+    #                         item = 0
+    #                     byte_arr.append(item)
+    #                 arguments.append('[B:' + str(byte_arr))
 
-                    return arguments
+    #                 return arguments
 
     def get_return_variable_name(self, line):
         mro_statement = re.search(self.MOVE_RESULT_OBJECT, line).group()
         return mro_statement[mro_statement.rindex(' ') + 1:]
 
+    @timeout(1)
     def pre_process(self, snippet):
         '''
             预处理 sget指令
@@ -123,7 +125,6 @@ class Plugin(object):
                     if clz_sig in key:
                         field = self.smalidir.get_field(key)
                         field.set_value(value)
-
         return args
 
     @staticmethod
@@ -144,9 +145,9 @@ class Plugin(object):
             # const-string v1, "Decode String"
             # invoke-static {v0, v1}, Landroid/util/Log;->d(
             # Ljava/lang/String;Ljava/lang/String;)I
-            new_content = ('const-string v10, "Dexsim"\n'
-                           'const-string v11, %s\n'
-                           'invoke-static {v10, v11}, Landroid/util/Log;->d'
+            new_content = ('const-string v0, "Dexsim"\n'
+                           'const-string v1, %s\n'
+                           'invoke-static {v0, v1}, Landroid/util/Log;->d'
                            '(Ljava/lang/String;Ljava/lang/String;)I\n')
 
         if mid not in self.target_contexts:
