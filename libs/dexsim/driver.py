@@ -70,7 +70,10 @@ class Driver:
             return
 
         if logs.DEBUG:
-            print(output)
+            try:
+                print(output)
+            except UnicodeEncodeError:
+                print(str(output).encode('utf-8'))
 
         tempdir = tempfile.gettempdir()
         output_path = os.path.join(tempdir, 'output.json')
