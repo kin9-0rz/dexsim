@@ -17,7 +17,7 @@ class STRING_FUNC(Plugin):
     String, StringBuilder, StringBuffer等。
     '''
     name = "STRING_FUNC"
-    enabled = False
+    enabled = True
 
     def __init__(self, driver, methods, smalidir):
         self.emu = Emulator()

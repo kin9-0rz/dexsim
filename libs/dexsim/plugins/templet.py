@@ -17,44 +17,64 @@ class TEMPLET(Plugin):
 
     def __init__(self, driver, methods, smalidir):
         Plugin.__init__(self, driver, methods, smalidir)
+        self.templets = []
+        if not self.templets:
+            self._init_templets()
 
-    def run(self):
-        print('run Plugin: %s' % self.name, end=' -> ')
-        self.__load_templets()
-
-    def __load_templets(self):
-        print()
+    def _init_templets(self):
         templets_path = os.path.dirname(__file__)[:-7] + 'templets'
         for filename in os.listdir(templets_path):
             file_path = os.path.join(templets_path, filename)
             with open(file_path, encoding='utf-8') as f:
-                datas = yaml.load(f.read())
-                for item in datas:
-                    for key, value in item.items():
-                        self.tname = key
+                self.templets.append(yaml.load(f.read()))
 
-                        # if key != 'str2':
-                        #     continue
+    def run(self):
+        print('run Plugin: %s' % self.name)
+        # 1. 使用参数 + 函数调用的方式处理 - 精准匹配 - 处理快
+        for templet in self.templets:
+            for item in templet:
+                for key, value in item.items():
+                    dtype = value['type']
+                    if dtype != 1:
+                        continue
 
-                        if not value['enabled']:
-                            print('Not Load templet:', self.tname)
-                            continue
-                        print('Load templet:', self.tname)
-                        if value['protos']:
-                            protos = [i.replace('\\', '')
-                                      for i in value['protos']]
-                        else:
-                            protos = []
-                        ptn = ''.join(value['pattern'])
-                        dtype = value['type']
+                    self.tname = key
+                    if not value['enabled']:
+                        print('Not Load :', self.tname)
+                        continue
+                    print('Load :', self.tname)
+                    if value['protos']:
+                        protos = [i.replace('\\', '')
+                                  for i in value['protos']]
+                    else:
+                        protos = []
 
-        # 1. 使用参数 + 函数调用的方式处理 - 精准匹配的方式
-        # 2. 解密函数，前几行运算 -  - 有可能运算出现乱码
-        # 3. 所有代码执行运算
-                        if dtype == 1:
-                            self.__process_quickly(protos, ptn)
-                        elif dtype == 2:
-                            self.__process_slowly(protos, ptn)
+                    ptn = ''.join(value['pattern'])
+
+                    self.__process_quickly(protos, ptn)
+
+        # 2. 使用通用的方式 - 处理比较慢
+        for templet in self.templets:
+            for item in templet:
+                for key, value in item.items():
+                    dtype = value['type']
+                    if dtype != 2:
+                        continue
+
+                    self.tname = key
+                    if not value['enabled']:
+                        print('Not Load :', self.tname)
+                        continue
+                    print('Load :', self.tname)
+                    if value['protos']:
+                        protos = [i.replace('\\', '')
+                                  for i in value['protos']]
+                    else:
+                        protos = []
+
+                    ptn = ''.join(value['pattern'])
+
+                    self.__process_slowly(protos, ptn)
 
     def get_clz_mtd_rtn_name(self, line):
         '''
@@ -222,7 +242,7 @@ class TEMPLET(Plugin):
                         new_body.append(line)
                         continue
 
-                    print(line.encode())
+                    # print(line.encode())
 
                     if 'Ljava/lang/String;->valueOf(I)Ljava/lang/String;' in line:
                         new_body.append(line)
@@ -296,7 +316,8 @@ class TEMPLET(Plugin):
                     # 解密方式2 - 推送手机执行
                     # If next line is move-result-object, get return
                     # register name.
-                    res = move_result_obj_prog.search(lines[lidx + 2])
+                    # print(lines)
+                    res = move_result_obj_prog.search(lines[lidx + 1])
                     if res:
                         rtn_name = res.groups()[0]
                         # To avoid '# abc_v10' be replace with '# abc_v1'
