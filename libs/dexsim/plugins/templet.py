@@ -2,6 +2,9 @@ import re
 import os
 import yaml
 
+from smaliemu.emulator import Emulator
+
+
 from libs.dexsim.plugin import Plugin
 from libs.dexsim.timeout import timeout
 from libs.dexsim.timeout import TIMEOUT_EXCEPTION
@@ -17,6 +20,7 @@ class TEMPLET(Plugin):
 
     def __init__(self, driver, methods, smalidir):
         Plugin.__init__(self, driver, methods, smalidir)
+        self.emu2 = Emulator()
         self.templets = []
         if not self.templets:
             self._init_templets()
@@ -208,7 +212,7 @@ class TEMPLET(Plugin):
             for mtd in sf.get_methods():
                 registers = {}
 
-                # if 'e(JLjava/lang/Object;)I' not in str(mtd):
+                # if 'com/ice/jake/u;' not in str(mtd):
                 #     continue
 
                 # 如果存在数组
@@ -273,6 +277,7 @@ class TEMPLET(Plugin):
                         args = registers if registers else args
                     except TIMEOUT_EXCEPTION as ex:
                         snippet.clear()
+                        print(ex)
                         continue
 
                     # for k in registers:
@@ -336,20 +341,20 @@ class TEMPLET(Plugin):
             self.optimize()
             self.clear()
 
-    @timeout(5)
+    @timeout(3)
     def get_registers(self, snippet, args, rnames):
-        from smaliemu.emulator import Emulator
-        emu2 = Emulator()
-        emu2.call(snippet[-5:], args=args, thrown=False)
+        # from smaliemu.emulator import Emulator
+        # emu2 = Emulator()
+        self.emu2.call(snippet[-5:], args=args, thrown=False)
 
-        result = self.varify_args(emu2.vm.variables, rnames)
+        result = self.varify_args(self.emu2.vm.variables, rnames)
         if result:
-            return emu2.vm.variables
+            return self.emu2.vm.variables
 
-        emu2.call(snippet, args=args, thrown=False)
-        result = self.varify_args(emu2.vm.variables, rnames)
+        self.emu2.call(snippet, args=args, thrown=False)
+        result = self.varify_args(self.emu2.vm.variables, rnames)
         if result:
-            return emu2.vm.variables
+            return self.emu2.vm.variables
 
     def varify_args(self, args, rnames):
         for k in rnames:
@@ -358,7 +363,7 @@ class TEMPLET(Plugin):
                 return False
         return True
 
-    @timeout(5)
+    @timeout(3)
     def smali_call(self, cls_name, mtd_name, args):
         '''执行解密方法
 
