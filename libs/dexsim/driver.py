@@ -3,11 +3,14 @@ import sys
 import tempfile
 import subprocess
 import json
+import logging
 
 from powerzip import PowerZip
 from adbwrapper import ADB
 
 from libs.dexsim import logs
+
+logger = logging.getLogger(__name__)
 
 
 class Driver:
@@ -31,8 +34,8 @@ class Driver:
         Merge driver(driver.dex) and target dex file to oracle-driver.dex,
         then push to /data/local/
         """
-        print('Merge driver(driver.dex) and %s to oracle-driver.dex' %
-              target_dex)
+        logger.info(
+            'Merge driver(driver.dex) and %s to oracle-driver.dex', target_dex)
 
         for path in sys.path:
             if path and path in __file__:
@@ -45,8 +48,8 @@ class Driver:
         merged_dex = 'merged.dex'
         cmd = "java -cp %s com.android.dx.merge.DexMerger %s %s %s" % (
             dx_path, merged_dex, target_dex, driver_path)
-        subprocess.call(cmd, shell=True)
-        print('Pushing merged driver to device ...')
+        subprocess.call(cmd)
+        logger.info('Pushing merged driver to device ...')
 
         merged_apk = 'merged.apk'
         pzip = PowerZip(merged_apk)
@@ -66,14 +69,13 @@ class Driver:
         output = self.adb.get_output().decode('utf-8', errors='ignore')
 
         if 'success' not in output:
-            print(output)
+            # logger.info(output)
             return
 
-        if logs.DEBUG:
-            try:
-                print(output)
-            except UnicodeEncodeError:
-                print(str(output).encode('utf-8'))
+        # try:
+        #     logger.info(output)
+        # except UnicodeEncodeError:
+        #     logger.warning(str(output).encode('utf-8'))
 
         tempdir = tempfile.gettempdir()
         output_path = os.path.join(tempdir, 'output.json')

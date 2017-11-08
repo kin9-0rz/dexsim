@@ -1,22 +1,18 @@
 import argparse
-from time import clock
 import os
-import subprocess
+import re
 import shutil
-import zipfile
-import tempfile
+import subprocess
 import sys
+import tempfile
+import zipfile
+from time import clock
 
 from cigam import Magic
-import powerzip
 
-from smafile import SmaliFile
-
-from libs.dexsim.driver import Driver
-from libs.dexsim.oracle import Oracle
-
-from libs.dexsim import logs
-
+from .dexsim import logs
+from .dexsim.driver import Driver
+from .dexsim.oracle import Oracle
 
 main_path = ''
 for path in sys.path:
@@ -28,13 +24,11 @@ with open(os.path.join(main_path, "res", 'smali.txt'), encoding='utf-8') as f:
 
 
 def clean(smali_dir):
-    # remove
     for line in lines:
         clz = line.split('#')[0]
-        path = smali_dir + os.sep + clz.replace('.', os.sep).strip('\n')
-        if os.path.exists(path):
-            print('del %s' % path)
-            shutil.rmtree(path)
+        xpath = smali_dir + os.sep + clz.replace('.', os.sep).strip('\n')
+        if os.path.exists(xpath):
+            shutil.rmtree(xpath)
 
 
 def dexsim(dex_file, smali_dir, include_str):
@@ -100,15 +94,12 @@ def main(args):
         else:
             tempdir = tempfile.mkdtemp()
 
-        import re
         ptn = re.compile(r'classes\d*.dex')
 
-        import zipfile
         zipFile = zipfile.ZipFile(apk_path)
 
         for item in zipFile.namelist():
             if ptn.match(item):
-                print(item)
                 output_path = zipFile.extract(item, tempdir)
                 baksmali(output_path, smali_dir)
         zipFile.close()
