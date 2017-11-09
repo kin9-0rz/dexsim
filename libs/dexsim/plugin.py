@@ -13,8 +13,6 @@ from json import JSONEncoder
 
 from smaliemu.emulator import Emulator
 
-from libs.dexsim import logs
-
 from .otime import timeout
 
 logger = logging.getLogger(__name__)
@@ -76,7 +74,7 @@ class Plugin(object):
         """
         预处理 sget指令
         """
-        emu2 = Emulator()
+        # emu2 = Emulator()
         args = {}
 
         clz_sigs = set()
@@ -105,14 +103,16 @@ class Plugin(object):
             mtd = self.smalidir.get_method(clz_sig, '<clinit>()V')
             if mtd:
                 body = mtd.get_body()
-                tmp = re.split(r'\n\s*', body)
-                emu2.call(tmp, thrown=False)
-                args.update(emu2.vm.variables)
+                self.emu2.call(re.split(r'\n\s*', body), thrown=False)
+                self.emu2.call(re.split(r'\n\s*', body), thrown=False)
+                args.update(self.emu2.vm.variables)
 
-                for (key, value) in emu2.vm.variables.items():
+                for (key, value) in self.emu2.vm.variables.items():
                     if clz_sig in key:
                         field = self.smalidir.get_field(key)
                         field.set_value(value)
+        import sys
+        # print(__name__, 'pre_process, emu2', sys.getsizeof(self.emu2))
         return args
 
     @staticmethod
@@ -284,10 +284,10 @@ class Plugin(object):
         if isinstance(outputs, str):
             return
 
-        try:
-            logger.debug(outputs)
-        except UnicodeEncodeError:
-            logger.warning(str(outputs).encode('utf-8'))
+        # try:
+        #     logger.debug(outputs)
+        # except UnicodeEncodeError:
+        #     logger.warning(str(outputs).encode('utf-8'))
 
         for key, value in outputs.items():
             if 'success' not in value:

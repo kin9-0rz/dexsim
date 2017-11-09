@@ -1,9 +1,7 @@
-"""
-快速匹配模板，收集一些常用的解密模板，用于快速解密。
-"""
 import logging
 import os
 import re
+from time import clock
 
 import yaml
 from smaliemu.emulator import Emulator
@@ -41,6 +39,7 @@ class TEMPLET(Plugin):
                 self.templets.append(yaml.load(f.read()))
 
     def run(self):
+        print('Run ' + __name__, end=' ', flush=True)
         for templet in self.templets:
             for item in templet:
                 for key, value in item.items():
@@ -108,10 +107,11 @@ class TEMPLET(Plugin):
         self.optimize()
         self.clear()
 
-    def get_arguments_name(self, line, result):
-        '''
+    @staticmethod
+    def get_arguments_name(line, result):
+        """
         获取解密方法的参数名
-        '''
+        """
         # invoke-static {v14, v16} => [v14, v16]
         if 'range' not in line:
             return result.split(', ')
