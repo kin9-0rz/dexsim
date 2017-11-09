@@ -1,3 +1,6 @@
+"""
+超时处理
+"""
 import sys
 import threading
 import time
@@ -17,44 +20,62 @@ class KThread(threading.Thread):
         self.__run_backup = None
 
     def start(self):
-        """Start the thread."""
+        """
+        Start the thread.
+        """
         self.__run_backup = self.run
         self.run = self.__run      # Force the Thread to install our trace.
         threading.Thread.start(self)
 
     def __run(self):
-        """Hacked run function, which installs the trace."""
+        """
+        Hacked run function, which installs the trace.
+        """
         sys.settrace(self.globaltrace)
         self.__run_backup()
         self.run = self.__run_backup
 
     def globaltrace(self, frame, why, arg):
+        """
+        全局
+        """
         if why == 'call':
             return self.localtrace
         return None
 
     def localtrace(self, frame, why, arg):
+        """
+        本地
+        """
         if self.killed:
             if why == 'line':
                 raise SystemExit()
         return self.localtrace
 
     def kill(self):
+        """
+        是否已杀死
+        """
         self.killed = True
 
 
 class TIMEOUT_EXCEPTION(Exception):
-    """function run timeout"""
+    """
+    超时异常
+    """
     pass
 
 
 def timeout(seconds):
-    """超时装饰器，指定超时时间
+    """
+    超时装饰器，指定超时时间
 
-    若被装饰的方法在指定的时间内未返回，则抛出Timeout异常"""
-
+    若被装饰的方法在指定的时间内未返回，则抛出Timeout异常
+    """
     def timeout_decorator(func):
-
+        """
+        超时装饰器
+        """
         def _new_func(oldfunc, result, oldfunc_args, oldfunc_kwargs):
             result.append(oldfunc(*oldfunc_args, **oldfunc_kwargs))
 
@@ -91,7 +112,10 @@ def timeout(seconds):
 
 
 @timeout(5)
-def method_timeout(seconds, text):
+def test_timeout(seconds, text):
+    """
+    测试用例
+    """
     print('start', seconds, text)
     time.sleep(seconds)
     print('finish', seconds, text)
@@ -102,6 +126,6 @@ if __name__ == '__main__':
     for sec in range(1, 10):
         try:
             print('*' * 20)
-            print(method_timeout(sec, 'TIMEOUT!'))
+            print(test_timeout(sec, 'TIMEOUT!'))
         except TIMEOUT_EXCEPTION as e:
             print(e)
