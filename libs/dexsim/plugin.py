@@ -1,16 +1,27 @@
-from json import JSONEncoder
-import tempfile
-import os
+"""
+插件的基类。
+- 解密插件必须继承这个类。
+- 解密插件必须实现run方法。
+"""
 import hashlib
+import logging
+import os
 import re
+import tempfile
+from abc import abstractmethod
+from json import JSONEncoder
 
 from smaliemu.emulator import Emulator
 
-from libs.dexsim import logs
-from libs.dexsim.timeout import timeout
+from .otime import timeout
+
+logger = logging.getLogger(__name__)
 
 
 class Plugin(object):
+    """
+    解密插件基类
+    """
     name = 'Plugin'
     description = ''
     version = ''
@@ -50,85 +61,165 @@ class Plugin(object):
         self.methods = methods
         self.smalidir = smalidir
         # self.smali_files = smali_files
+
         self.emu = Emulator()
+        self.emu2 = Emulator()
 
-    # def get_arguments_from_clinit(self, field):
-    #     sput_obj_prog = re.compile(r'([\w\W]+?)sput-object (v\d+), %s' %
-    #                                re.escape(field))
-    #     arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
-
-    #     for smali_file in self.smali_files:
-    #         if smali_file.class_name in field:
-    #             continue
-
-    #         for mtd in smali_file.methods:
-    #             arr = []
-    #             if mtd.name == '<clinit>':
-    #                 matchs = sput_obj_prog.search(mtd.body).groups()
-    #                 snippet = matchs[0]
-
-    #                 arr = re.split(r'\n+', snippet)[:-1]
-    #                 arr.append('return-object %s' % matchs[1])
-    #                 result = arr_data_prog.search(mtd.body)
-    #                 if result:
-    #                     array_data_content = re.split(r'\n+', result.group())
-    #                     arr.extend(array_data_content)
-
-    #                 arr_data = self.emu.call(arr)
-    #                 if self.emu.vm.exceptions:
-    #                     break
-
-    #                 arguments = []
-    #                 byte_arr = []
-    #                 for item in arr_data:
-    #                     if item == '':
-    #                         item = 0
-    #                     byte_arr.append(item)
-    #                 arguments.append('[B:' + str(byte_arr))
-
-    #                 return arguments
-
-    def get_return_variable_name(self, line):
-        mro_statement = re.search(self.MOVE_RESULT_OBJECT, line).group()
-        return mro_statement[mro_statement.rindex(' ') + 1:]
+    # def get_return_variable_name(self, line):
+    #     mro_statement = re.search(self.MOVE_RESULT_OBJECT, line).group()
+    #     return mro_statement[mro_statement.rindex(' ') + 1:]
 
     @timeout(1)
     def pre_process(self, snippet):
-        '''
-            预处理 sget指令
-        '''
-        emu2 = Emulator()
+        """
+        预处理 sget指令
+        """
+        # emu2 = Emulator()
         args = {}
 
         clz_sigs = set()
         field_desc_prog = re.compile(r'^.*, (.*?->.*)$')
         for line in snippet:
-            if 'sget' in line:
-                field_desc = field_desc_prog.match(line).groups()[0]
+            if 'sget' not in line:
+                continue
+
+            field_desc = field_desc_prog.match(line).groups()[0]
+
+            try:
                 field = self.smalidir.get_field(field_desc)
-                if field:
-                    value = field.get_value()
-                    if value:
-                        args.update({field_desc: value})
-                        continue
-                clz_sigs.add(field_desc.split('->')[0])
+            except TypeError as ex:
+                logger.warning(ex)
+                logger(field_desc)
+                continue
+
+            if field:
+                value = field.get_value()
+                if value:
+                    args.update({field_desc: value})
+                    continue
+            clz_sigs.add(field_desc.split('->')[0])
 
         for clz_sig in clz_sigs:
             mtd = self.smalidir.get_method(clz_sig, '<clinit>()V')
             if mtd:
                 body = mtd.get_body()
-                tmp = re.split(r'\n\s*', body)
-                emu2.call(tmp, thrown=False)
-                args.update(emu2.vm.variables)
+                self.emu2.call(re.split(r'\n\s*', body), thrown=False)
+                self.emu2.call(re.split(r'\n\s*', body), thrown=False)
+                args.update(self.emu2.vm.variables)
 
-                for (key, value) in emu2.vm.variables.items():
+                for (key, value) in self.emu2.vm.variables.items():
                     if clz_sig in key:
                         field = self.smalidir.get_field(key)
                         field.set_value(value)
+        import sys
+        # print(__name__, 'pre_process, emu2', sys.getsizeof(self.emu2))
         return args
 
     @staticmethod
+    def convert_args(typ8, value):
+        """
+        根据参数类型，把参数转换为适合Json保存的格式。
+        """
+        if value is None:
+            return None
+
+        if typ8 == 'I':
+            if not isinstance(value, int):
+                return None
+            return 'I:' + str(value)
+
+        if typ8 == 'B':
+            if not isinstance(value, int):
+                return None
+            return 'B:' + str(value)
+
+        if typ8 == 'S':
+            if not isinstance(value, int):
+                return None
+            return 'S:' + str(value)
+
+        if typ8 == 'C':
+            # don't convert to char, avoid some unreadable chars.
+            return 'C:' + str(value)
+
+        if typ8 == 'Ljava/lang/String;':
+            if not isinstance(value, str):
+                return None
+
+            import codecs
+            item = codecs.getdecoder('unicode_escape')(value)[0]
+            args = []
+            for i in item.encode("UTF-8"):
+                args.append(i)
+            return "java.lang.String:" + str(args)
+
+        if typ8 == '[B':
+            if not isinstance(value, list):
+                return None
+            byte_arr = []
+            for item in value:
+                if item == '':
+                    item = 0
+                byte_arr.append(item)
+            return '[B:' + str(byte_arr)
+
+        if typ8 == '[C':
+            if not isinstance(value, list):
+                return None
+            byte_arr = []
+            for item in value:
+                if item == '':
+                    item = 0
+                byte_arr.append(item)
+            return '[C:' + str(byte_arr)
+
+        logger.warning('不支持该类型 %s %s', typ8, value)
+
+    @timeout(3)
+    def get_vm_variables(self, snippet, args, rnames):
+        """
+        snippet : smali 代码
+        args    ：方法藏书
+        rnames  ：寄存器
+
+        获取当前vm的变量
+        """
+        self.emu2.call(snippet[-5:], args=args, thrown=False)
+
+        # 注意： 寄存器的值，如果是跨方法的话，可能存在问题 —— 导致解密乱码
+        # A方法的寄存器v1，与B方法的寄存器v1，保存的内容不一定一样
+        # TODO 下一个方法，则进行清理
+        # 方法成员变量，可以考虑初始化到smalifile中
+        # 其他临时变量，则用smali执行
+        result = self.varify_argments(self.emu2.vm.variables, rnames)
+        if result:
+            return self.emu2.vm.variables
+
+        self.emu2.call(snippet, args=args, thrown=False)
+        result = self.varify_argments(self.emu2.vm.variables, rnames)
+        if result:
+            return self.emu2.vm.variables
+
+    @staticmethod
+    def varify_argments(variables, arguments):
+        """
+        variables ：vm存放的变量
+        arguments ：smali方法的参数
+        验证smali方法的参数
+        """
+        for k in arguments:
+            value = variables.get(k, None)
+            if value is None:
+                return False
+        return True
+
+    @staticmethod
     def get_json_item(cls_name, mtd_name, args):
+        """
+        json item 为一个json格式的解密对象。
+        包含id、className、methodName、arguments。
+        模拟器/手机会通过解析这个对象进行解密。
+        """
         item = {'className': cls_name,
                 'methodName': mtd_name,
                 'arguments': args}
@@ -137,10 +228,15 @@ class Plugin(object):
         return item
 
     def append_json_item(self, json_item, mtd, old_content, rtn_name):
+        """
+        往json list添加json解密对象
+        json list 存放了所有的json格式解密对象。
+        """
         mid = json_item['id']
         if rtn_name:
             new_content = 'const-string %s, ' % rtn_name + '%s'
         else:
+            # TODO XX 也许有更好的方式
             # const-string v0, "Dexsim"
             # const-string v1, "Decode String"
             # invoke-static {v0, v1}, Landroid/util/Log;->d(
@@ -158,10 +254,19 @@ class Plugin(object):
         if json_item not in self.json_list:
             self.json_list.append(json_item)
 
+    @abstractmethod
     def run(self):
+        """
+        插件执行逻辑
+        插件必须实现该方法
+        """
         pass
 
     def optimize(self):
+        """
+        smali 通用优化代码
+        一般情况下，可以使用这个，插件也可以实现自己的优化方式。
+        """
         if not self.json_list or not self.target_contexts:
             return
 
@@ -179,17 +284,16 @@ class Plugin(object):
         if isinstance(outputs, str):
             return
 
-        if logs.DEBUG:
-            try:
-                print(outputs)
-            except UnicodeEncodeError:
-                print(str(outputs).encode('utf-8'))
+        # try:
+        #     logger.debug(outputs)
+        # except UnicodeEncodeError:
+        #     logger.warning(str(outputs).encode('utf-8'))
 
         for key, value in outputs.items():
             if 'success' not in value:
                 continue
             if key not in self.target_contexts:
-                print('not found', end='')
+                logger.warning('not found %s', key)
                 continue
 
             if len(value[1]) == 2:
@@ -212,6 +316,9 @@ class Plugin(object):
         self.smali_files_update()
 
     def clear(self):
+        """
+        每次解密完毕后，都需要清理。
+        """
         self.json_list.clear()
         self.target_contexts.clear()
 

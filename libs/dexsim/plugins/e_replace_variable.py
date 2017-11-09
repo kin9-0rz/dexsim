@@ -1,8 +1,11 @@
 import re
+import logging
 
 from libs.dexsim.plugin import Plugin
 
 __all__ = ["ReplaceVariable"]
+
+logger = logging.getLogger(__name__)
 
 
 class ReplaceVariable(Plugin):
@@ -18,7 +21,7 @@ class ReplaceVariable(Plugin):
         self.make_changes = False
 
     def run(self):
-        print('run Plugin: %s' % self.name, end=' -> ')
+        print('Run ' + __name__, end=' ', flush=True)
         self.__process_all()
 
     def __process_all(self):
@@ -46,7 +49,6 @@ class ReplaceVariable(Plugin):
             sget_prog = re.compile(sget_ptn + key)
             for sf in self.smalidir:
                 for mtd in sf.get_methods():
-                    print(mtd)
                     for item in sget_prog.finditer(mtd.get_body()):
                         line = item.group()
                         old = line
@@ -58,8 +60,6 @@ class ReplaceVariable(Plugin):
                             'sget-object', fields[key][0]).replace(key, fields[key][1])
 
                         mtd.set_body(mtd.get_body().replace(old, new))
-
-                        print(old, new)
 
                         mtd.set_modified(True)
                         self.make_changes = True
