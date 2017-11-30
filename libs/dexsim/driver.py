@@ -69,13 +69,13 @@ class Driver:
         output = self.adb.get_output().decode('utf-8', errors='ignore')
 
         if 'success' not in output:
-            # logger.info(output)
+            logger.info(output)
             return
 
-        # try:
-        #     logger.debug(output)
-        # except UnicodeEncodeError:
-        #     logger.debug(str(output).encode('utf-8'))
+        try:
+            logger.debug(output)
+        except UnicodeEncodeError:
+            logger.debug(str(output).encode('utf-8'))
 
         tempdir = tempfile.gettempdir()
         output_path = os.path.join(tempdir, 'output.json')
