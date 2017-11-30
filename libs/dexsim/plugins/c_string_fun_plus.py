@@ -22,7 +22,7 @@ class STRING_FUN_PLUS(Plugin):
     String, StringBuilder, StringBuffer等。
     '''
     name = "STRING_FUN_PLUS"
-    enabled = True
+    enabled = False
 
     def __init__(self, driver, methods, smalidir):
         Plugin.__init__(self, driver, methods, smalidir)
@@ -79,8 +79,10 @@ class STRING_FUN_PLUS(Plugin):
                 else:
                     continue
                 array_snippet = self.get_array_snippet(body)
-
-                flag, new_body = self.process_body(body, array_snippet)
+                try:
+                    flag, new_body = self.process_body(body, array_snippet)
+                except TIMEOUT_EXCEPTION:
+                    pass
                 if flag:
                     mtd.set_body('\n'.join(new_body))
                     mtd.set_modified(True)
@@ -88,6 +90,7 @@ class STRING_FUN_PLUS(Plugin):
 
         self.smali_files_update()
 
+    @timeout(1)
     def process_body(self, body, arrs):
         lines = re.split(r'\n', body)
 
