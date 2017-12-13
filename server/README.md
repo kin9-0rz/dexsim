@@ -12,7 +12,6 @@ dexsim 的 Android服务端，通过动态加载的方式，为 dexsim 提供解
 
 
 ## TODO
-- [ ] Intent - 利用`adb shell am broadcast` - 接受来自dexsim的命令
-- [ ] 动态加载 - 需要选一个合适的插件框架 - 待调研
+- [x] Intent - 利用`adb shell am broadcast` - 接受来自dexsim的命令
+- [x] 动态加载 - 需要选一个合适的插件框架 - 待调研
 - [ ] 解密处理部分 - 在原有的基础上修改，不做大的变化
-

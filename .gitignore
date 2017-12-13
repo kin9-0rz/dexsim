@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 .vscode
+dexsim.log
+.DS_Store
 
 # C extensions
 *.so

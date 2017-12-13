@@ -1,0 +1,76 @@
+# decode string
+-  str_1_1:
+    enabled: 1
+    type: 1
+    protos:
+      - Ljava/lang/String;
+    pattern:
+      - const-string (.*?), ".*?"\s*
+      - invoke-static(?:\/range)? \{\1\}, (.*?);->(.*?)\(Ljava/lang/String;\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s
+-  str_1_2:
+    enabled: 1
+    type: 1
+    protos:
+      - Ljava/lang/String;
+      - Ljava/lang/String;
+    pattern:
+      - const-string (.*?), "(.*?)"\s*
+      - const-string (.*?), "(.*?)"\s*
+      - invoke-static(?:\/range)? \{(.*?)\}, (.*?);->(.*?)\(Ljava/lang/String;Ljava/lang/String;\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s
+-  str_1_3:
+    enabled: 1
+    type: 1
+    protos:
+      - Ljava/lang/String;
+      - Ljava/lang/String;
+      - Ljava/lang/String;
+    pattern:
+      - const-string (.*?), "(.*?)"\s*
+      - const-string (.*?), "(.*?)"\s*
+      - const-string (.*?), "(.*?)"\s*
+      - invoke-static(?:\/range)? \{(.*?)\}, (.*?);->(.*?)\(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s
+-  str0:
+    enabled: 1
+    type: 2
+    protos:
+    pattern:
+      - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->([^\(]+)\(()\)
+      - Ljava/lang/String;\s*
+-  str1_2:
+    enabled: 1
+    type: 2
+    protos:
+      - Ljava/lang/String;
+    pattern:
+      - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;)\)
+      - Ljava/lang/String;\s*
+    comment:
+      - const-string v3, "encoded string"
+      - invoke-static {v3}, La/b/c;->decrypt(Ljava/lang/String;)Ljava/lang/String;
+      - move-result-object v4
+      - ->
+      - const-string v4, "decoded string"
+- str2:
+    enabled: 1
+    type: 2
+    protos:
+      - Ljava/lang/String;
+      - Ljava/lang/String;
+    pattern:
+      - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->([^\(]+)\((Ljava/lang/String;Ljava/lang/String;)\)
+      - Ljava/lang/String;\s*
+- str3:
+    enabled: 1
+    type: 2
+    protos:
+      - Ljava/lang/String;
+      - Ljava/lang/String;
+      - Ljava/lang/String;
+    pattern:
+      - invoke-static[/\s\w]+\{(.*?)},\s+([^;]+);->
+      - ([^\(]+)\((Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)\)
+      - Ljava/lang/String;\s*
+    comment: invoke-static/range {v14 .. v16},
