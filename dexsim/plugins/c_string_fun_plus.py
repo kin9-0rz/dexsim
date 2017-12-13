@@ -3,12 +3,9 @@
 """
 import logging
 import re
-from time import clock
-import sys
 
-
+from timeout3 import TIMEOUT_EXCEPTION, timeout
 from ..plugin import Plugin
-from ..otime import TIMEOUT_EXCEPTION, timeout
 
 logger = logging.getLogger(__name__)
 

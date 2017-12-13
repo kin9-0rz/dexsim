@@ -3,10 +3,9 @@ import re
 from time import clock
 
 from smaliemu.emulator import Emulator
+from timeout3 import TIMEOUT_EXCEPTION
 
-from libs.dexsim.plugin import Plugin
-
-from ..otime import TIMEOUT_EXCEPTION
+from ..plugin import Plugin
 
 __all__ = ["TEMPLET_PLUS"]
 
@@ -25,7 +24,7 @@ class TEMPLET_PLUS(Plugin):
     用于匹配那些比较麻烦的解密方法，相对比较耗时——有时候，会超级耗时
     '''
     name = "TEMPLET_PLUS"
-    enabled = True
+    enabled = False
     tname = None
 
     def __init__(self, driver, methods, smalidir):

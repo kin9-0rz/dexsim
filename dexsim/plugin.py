@@ -12,8 +12,7 @@ from abc import abstractmethod
 from json import JSONEncoder
 
 from smaliemu.emulator import Emulator
-
-from .otime import timeout
+from timeout3 import timeout
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +54,9 @@ class Plugin(object):
     # smali methods witch have been update
     smali_mtd_updated_set = set()
 
-    def __init__(self, driver, methods, smalidir):
+    def __init__(self, driver, smalidir):
         self.make_changes = False
         self.driver = driver
-        self.methods = methods
         self.smalidir = smalidir
         # self.smali_files = smali_files
 
@@ -111,7 +109,6 @@ class Plugin(object):
                     if clz_sig in key:
                         field = self.smalidir.get_field(key)
                         field.set_value(value)
-        import sys
         # print(__name__, 'pre_process, emu2', sys.getsizeof(self.emu2))
         return args
 

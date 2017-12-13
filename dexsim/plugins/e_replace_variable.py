@@ -1,7 +1,7 @@
-import re
 import logging
+import re
 
-from libs.dexsim.plugin import Plugin
+from ..plugin import Plugin
 
 __all__ = ["ReplaceVariable"]
 
