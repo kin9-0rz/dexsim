@@ -11,6 +11,7 @@ cn.flyco.pageindicator
 com.actionbarsherlock
 com.adchina.android
 com.adobe.air
+com.openfeint
 com.alipay
 com.amazon.device.ads
 com.amazonaws

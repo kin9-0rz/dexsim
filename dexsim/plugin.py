@@ -281,11 +281,6 @@ class Plugin(object):
         if isinstance(outputs, str):
             return
 
-        # try:
-        #     logger.debug(outputs)
-        # except UnicodeEncodeError:
-        #     logger.warning(str(outputs).encode('utf-8'))
-
         for key, value in outputs.items():
             if 'success' not in value:
                 continue
@@ -293,14 +288,17 @@ class Plugin(object):
                 logger.warning('not found %s', key)
                 continue
 
-            if len(value[1]) == 2:
+            if value[1] == 'null':
                 continue
+
+            new_str = value[1]
+            print(new_str)
 
             # json_item, mtd, old_content, rtn_name
             for item in self.target_contexts[key]:
                 old_body = item[0].get_body()
                 old_content = item[1]
-                new_content = item[2] % value[1]
+                new_content = item[2] % new_str
 
                 # It's not a string.
                 if outputs[key][1] == 'null':
