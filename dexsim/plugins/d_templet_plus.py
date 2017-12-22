@@ -24,11 +24,11 @@ class TEMPLET_PLUS(Plugin):
     用于匹配那些比较麻烦的解密方法，相对比较耗时——有时候，会超级耗时
     '''
     name = "TEMPLET_PLUS"
-    enabled = False
+    enabled = True
     tname = None
 
-    def __init__(self, driver, methods, smalidir):
-        Plugin.__init__(self, driver, methods, smalidir)
+    def __init__(self, driver, smalidir):
+        Plugin.__init__(self, driver, smalidir)
         self.emu2 = Emulator()
 
     def run(self):
@@ -60,6 +60,9 @@ class TEMPLET_PLUS(Plugin):
 
         for sf in self.smalidir:
             for mtd in sf.get_methods():
+                # if 'xgtRtRawcet' not in str(mtd):
+                #     continue
+                # print(mtd)
                 # 如果存在数组
                 array_data_content = []
                 arr_res = arr_data_prog.search(mtd.get_body())
