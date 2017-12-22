@@ -5,6 +5,7 @@ import logging
 import re
 
 from timeout3 import TIMEOUT_EXCEPTION, timeout
+
 from ..plugin import Plugin
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class STRING_FUN_PLUS(Plugin):
     String, StringBuilder, StringBuffer等。
     '''
     name = "STRING_FUN_PLUS"
-    enabled = False
+    enabled = True
 
     def __init__(self, driver, methods, smalidir):
         Plugin.__init__(self, driver, methods, smalidir)

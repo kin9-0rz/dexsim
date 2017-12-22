@@ -4,3 +4,4 @@ cigam
 pyaml
 smafile
 smaliemu
+timeout3
