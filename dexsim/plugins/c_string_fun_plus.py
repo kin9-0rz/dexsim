@@ -22,8 +22,8 @@ class STRING_FUN_PLUS(Plugin):
     name = "STRING_FUN_PLUS"
     enabled = True
 
-    def __init__(self, driver, methods, smalidir):
-        Plugin.__init__(self, driver, methods, smalidir)
+    def __init__(self, driver, smalidir):
+        Plugin.__init__(self, driver, smalidir)
         self.make_changes = False
 
         self.arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
