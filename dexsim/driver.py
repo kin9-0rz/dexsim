@@ -32,9 +32,10 @@ class Driver:
         self.cmd_dss_stop = ['am', 'force-stop', 'me.mikusjelly.dss']
         self.cmd_dss = ['am', 'broadcast', '-a', 'dss.start']
 
-        self.cmd_get_finish = ['getprop', 'dss.is.finish']
-        self.cmd_set_finish = ['setprop', 'dss.is.finish', 'No']
-        self.cmd_set_new = ['setprop', 'dss.is.new', 'Yes']
+        self.cmd_get_finish = ['cat', '/data/local/dss_data/finish']
+        self.cmd_set_finish = ['echo', 'No', '>',
+                               '/data/local/dss_data/finish']
+        self.cmd_set_new = ['echo', 'Yes', '>', '/data/local/dss_data/new']
 
         self.adb = ADB()
         self.adb.shell_command(self.cmd_set_new)
