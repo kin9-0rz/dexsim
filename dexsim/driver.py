@@ -48,22 +48,28 @@ class Driver:
 
     def push_to_dss(self, apk_path):
         self.adb.run_cmd(['push', apk_path, DSS_APK_PATH])
-        self.start_dss()
 
     def decode(self, targets):
         self.adb.run_cmd(['push', targets, DSS_TARGETS_PATH])
         self.adb.shell_command(self.cmd_set_finish)
         self.adb.shell_command(self.cmd_dss)
 
-        print("debug .... test...")
+        self.start_dss()
 
         import time
+        counter = 0
         while 1:
             time.sleep(3)
+            counter += 3
             self.adb.shell_command(self.cmd_get_finish)
             output = self.adb.get_output().decode('utf-8', errors='ignore')
             if 'Yes' in output:
                 break
+
+            if counter > 180:
+                print("Time out")
+                self.stop_dss()
+                return
 
         tempdir = tempfile.gettempdir()
         output_path = os.path.join(tempdir, 'output.json')
@@ -85,5 +91,7 @@ class Driver:
         else:
             self.adb.shell_command(['pull', DSS_TARGETS_PATH])
         os.unlink(output_path)
+
+        self.stop_dss()
 
         return result

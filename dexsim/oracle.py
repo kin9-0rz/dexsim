@@ -27,5 +27,4 @@ class Oracle:
                 flag = flag | plugin.make_changes
                 plugin.make_changes = False
 
-        self.driver.stop_dss()
         self.driver.adb.shell_command(['rm', DSS_APK_PATH])
