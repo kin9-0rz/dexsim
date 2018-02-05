@@ -1,12 +1,11 @@
 import logging
 import os
 import re
-from time import clock
 
 import yaml
 from smaliemu.emulator import Emulator
 
-from libs.dexsim.plugin import Plugin
+from ..plugin import Plugin
 
 __all__ = ["TEMPLET"]
 
@@ -24,8 +23,8 @@ class TEMPLET(Plugin):
     enabled = True
     tname = None
 
-    def __init__(self, driver, methods, smalidir):
-        Plugin.__init__(self, driver, methods, smalidir)
+    def __init__(self, driver, smalidir):
+        Plugin.__init__(self, driver, smalidir)
         self.emu2 = Emulator()
         self.templets = []
         if not self.templets:

@@ -1,0 +1,34 @@
+# decode string
+-  S:
+    enabled: 1
+    type: 1
+    protos:
+      - Ljava/lang/String;
+    pattern:
+      - const-string (.*?), ".*?"\s*
+      - invoke-static(?:\/range)? \{\1\}, (.*?);->(.*?)\(Ljava/lang/String;\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s
+-  SS:
+    enabled: 1
+    type: 1
+    protos:
+      - Ljava/lang/String;
+      - Ljava/lang/String;
+    pattern:
+      - const-string (.*?), "(.*?)"\s*
+      - const-string (.*?), "(.*?)"\s*
+      - invoke-static(?:\/range)? \{(.*?)\}, (.*?);->(.*?)\(Ljava/lang/String;Ljava/lang/String;\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s
+-  SSS:
+    enabled: 1
+    type: 1
+    protos:
+      - Ljava/lang/String;
+      - Ljava/lang/String;
+      - Ljava/lang/String;
+    pattern:
+      - const-string (.*?), "(.*?)"\s*
+      - const-string (.*?), "(.*?)"\s*
+      - const-string (.*?), "(.*?)"\s*
+      - invoke-static(?:\/range)? \{(.*?)\}, (.*?);->(.*?)\(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s

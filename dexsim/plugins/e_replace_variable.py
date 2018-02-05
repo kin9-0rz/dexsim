@@ -1,7 +1,7 @@
-import re
 import logging
+import re
 
-from libs.dexsim.plugin import Plugin
+from ..plugin import Plugin
 
 __all__ = ["ReplaceVariable"]
 
@@ -16,8 +16,8 @@ class ReplaceVariable(Plugin):
     name = "ReplaceVariable"
     enabled = False
 
-    def __init__(self, driver, methods, smalidir):
-        Plugin.__init__(self, driver, methods, smalidir)
+    def __init__(self, driver, smalidir):
+        Plugin.__init__(self, driver, smalidir)
         self.make_changes = False
 
     def run(self):

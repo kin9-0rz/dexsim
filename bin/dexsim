@@ -19,9 +19,9 @@ if [ -z "$PYTHON" ]; then
 	echo "Unable to find python3 on path"
 else
 	# Find location of this bash script, and set its directory as the PYTHONPATH
-	TMP=${BASH_SOURCE%/*}
+	TMP=${BASH_SOURCE%/bin*}
 	export PYTHONPATH=$TMP
 
 	# Now execute the actual program
-	exec $PYTHON -O -m libs.main "$@"
+	exec $PYTHON -O -m dexsim.main "$@"
 fi
