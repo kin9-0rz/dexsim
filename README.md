@@ -12,7 +12,8 @@
 
 ## 用法
 
-1. 连接一台模拟器或手机（Root）
-2. 保证 `chmod 777 /data/local/`
-2. 至少启动dss应用一次（没有启动过的APP接收不到广播）
-3. 执行 `dexsim apk/dex`
+1. 连接一台模拟器或手机
+2. 需要ROOT！注意：不仅仅是adb shell，应用也需要获取到root。
+3. 保证 `chmod 777 /data/local/`
+4. 至少启动dss应用一次（没有启动过的APP接收不到广播）
+5. 执行 `dexsim apk/dex`

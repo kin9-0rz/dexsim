@@ -25,3 +25,5 @@ class Oracle:
                 print(plugin.make_changes)
                 flag = flag | plugin.make_changes
                 plugin.make_changes = False
+
+        self.driver.stop_dss()
