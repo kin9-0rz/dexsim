@@ -1,0 +1,41 @@
+# decode int
+# 正则表达式的写法，分组的时候，需要返回 - 寄存器、类名、方法名、参数/proto
+# invoke-static {v1, v2, v5}, Lcom/skt/pig/UserInterface;->a(III)Ljava/lang/String;
+# ('v1', 'v2', 'v5', 'Lcom/skt/pig/UserInterface', 'a', 'III')
+# 利用正则，自动分割所有的proto
+
+-  I:
+    enabled: 1
+    type: 1
+    protos:
+      - I
+    pattern:
+      - const\/?\d*? (.*?), -?0x[a-f\d]+\s*(?:.line \d+)?\s*
+      - invoke-static \{(.*?)\}, (.*?);->(.*?)\(I\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s
+
+-  II:
+    enabled: 1
+    type: 1
+    protos:
+      - I
+      - I
+    pattern:
+      - const\/?\d*? (.*?), -?0x[a-f\d]+\s*(?:.line \d+)?\s*
+      - const\/?\d*? (.*?), -?0x[a-f\d]+\s*(?:.line \d+)?\s*
+      - invoke-static \{(.*?)\}, (.*?);->(.*?)\(II\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s
+
+-  III:
+    enabled: 1
+    type: 1
+    protos:
+      - I
+      - I
+      - I
+    pattern:
+      - const\/?\d*? (.*?), -?0x[a-f\d]+\s*(?:.line \d+)?\s*
+      - const\/?\d*? (.*?), -?0x[a-f\d]+\s*(?:.line \d+)?\s*
+      - const\/?\d*? (.*?), -?0x[a-f\d]+\s*(?:.line \d+)?\s*
+      - invoke-static \{(.*?)\}, (.*?);->(.*?)\(III\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s
