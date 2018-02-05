@@ -19,16 +19,27 @@ class Driver:
         app_process /system/bin org.cf.oracle.Driver
         @/data/local/od-targets.json;
         """
-        self.cmd_dss = ['am', 'broadcast', '-a', 'dss']
-        self.cmd_set_new = ['setprop', 'dss.is.new', 'Yes']
+        self.cmd_dss_start = ['am', 'startservice',
+                              'me.mikusjelly.dss/.DSService']
+        self.cmd_dss_stop = ['am', 'force-stop', 'me.mikusjelly.dss']
+        self.cmd_dss = ['am', 'broadcast', '-a', 'dss.start']
+
         self.cmd_get_finish = ['getprop', 'dss.is.finish']
         self.cmd_set_finish = ['setprop', 'dss.is.finish', 'No']
+        self.cmd_set_new = ['setprop', 'dss.is.new', 'Yes']
 
         self.adb = ADB()
         self.adb.shell_command(self.cmd_set_new)
 
+    def start_dss(self):
+        self.adb.shell_command(self.cmd_dss_start)
+
+    def stop_dss(self):
+        self.adb.shell_command(self.cmd_dss_stop)
+
     def push_to_dss(self, apk_path):
         self.adb.run_cmd(['push', apk_path, '/data/local/dss/tmp.apk'])
+        self.start_dss()
 
     def decode(self, targets):
         self.adb.run_cmd(['push', targets, '/data/local/od-targets.json'])

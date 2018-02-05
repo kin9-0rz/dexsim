@@ -20,7 +20,7 @@ class STRING_FUN_PLUS(Plugin):
     String, StringBuilder, StringBuffer等。
     '''
     name = "STRING_FUN_PLUS"
-    enabled = True
+    enabled = False
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)

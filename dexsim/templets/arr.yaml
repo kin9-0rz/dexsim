@@ -1,6 +1,6 @@
 # decode int
 
--  byte_arr_1:
+-  Barr:
     enabled: 1
     type: 1
     protos:
@@ -10,7 +10,7 @@
       - fill-array-data [vp]\d+, :array_[\w\d]+\s*
       - invoke-static \{(.*?)}, (.*?);->(.*?)\(\[B\)Ljava/lang/String;\s*
       - move-result-object (.*?)\s
--  char_arr_1:
+-  Carr:
     enabled: 1
     type: 1
     protos:
@@ -20,7 +20,7 @@
       - fill-array-data [vp]\d+, :array_[\w\d]+\s*
       - invoke-static \{(.*?)}, (.*?);->(.*?)\(\[C\)Ljava/lang/String;\s*
       - move-result-object (.*?)\s
--  int_arr:
+-  Iarr:
     enabled: 0
     type: 1
     protos:
