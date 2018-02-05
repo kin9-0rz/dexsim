@@ -1,6 +1,7 @@
 from smafile import SmaliDir
 
 from . import FILTERS
+from .driver import DSS_APK_PATH
 from .plugin_manager import PluginManager
 
 
@@ -27,3 +28,4 @@ class Oracle:
                 plugin.make_changes = False
 
         self.driver.stop_dss()
+        self.driver.adb.shell_command(['rm', DSS_APK_PATH])

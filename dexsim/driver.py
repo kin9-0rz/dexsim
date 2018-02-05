@@ -10,6 +10,14 @@ from . import logs
 logger = logging.getLogger(__name__)
 
 
+DSS_PATH = '/data/local/dss'
+DSS_APK_PATH = '/data/local/dss/tmp.apk'
+DSS_DATA_PATH = '/data/local/dss_data'
+DSS_OUTPUT_PATH = '/data/local/dss_data/od-output.json'
+DSS_TARGETS_PATH = '/data/local/dss_data/od-targets.json'
+DSS_EXCEPTION_PATH = '/data/local/dss_data/od-targets.json'
+
+
 class Driver:
 
     def __init__(self):
@@ -38,13 +46,15 @@ class Driver:
         self.adb.shell_command(self.cmd_dss_stop)
 
     def push_to_dss(self, apk_path):
-        self.adb.run_cmd(['push', apk_path, '/data/local/dss/tmp.apk'])
+        self.adb.run_cmd(['push', apk_path, DSS_APK_PATH])
         self.start_dss()
 
     def decode(self, targets):
-        self.adb.run_cmd(['push', targets, '/data/local/od-targets.json'])
+        self.adb.run_cmd(['push', targets, DSS_TARGETS_PATH])
         self.adb.shell_command(self.cmd_set_finish)
         self.adb.shell_command(self.cmd_dss)
+
+        print("debug .... test...")
 
         import time
         while 1:
@@ -56,25 +66,23 @@ class Driver:
 
         tempdir = tempfile.gettempdir()
         output_path = os.path.join(tempdir, 'output.json')
-        self.adb.run_cmd(['pull', '/data/local/od-output.json', output_path])
+        self.adb.run_cmd(
+            ['pull', DSS_OUTPUT_PATH, output_path])
 
         with open(output_path, mode='r+', encoding='utf-8') as ofile:
             size = len(ofile.read())
             if not size:
-                self.adb.run_cmd(
-                    ['pull', '/data/local/od-exception.txt', 'exception.txt'])
-                self.adb.shell_command(['rm', '/data/local/od-exception.txt'])
+                self.adb.run_cmd(['pull', DSS_EXCEPTION_PATH, 'exception.txt'])
+                self.adb.shell_command(['rm', DSS_EXCEPTION_PATH])
             else:
                 ofile.seek(0)
                 result = json.load(ofile)
 
         if not logs.DEBUG:
-            self.adb.shell_command(['rm', '/data/local/od-output.json'])
-            self.adb.shell_command(['rm', '/data/local/od-targets.json'])
+            self.adb.shell_command(['rm', DSS_OUTPUT_PATH])
+            self.adb.shell_command(['rm', DSS_TARGETS_PATH])
         else:
-            self.adb.shell_command(['pull', '/data/local/od-targets.json'])
+            self.adb.shell_command(['pull', DSS_TARGETS_PATH])
         os.unlink(output_path)
-
-        self.adb.shell_command(['rm', '/data/local/dss/tmp.apk'])
 
         return result
