@@ -14,6 +14,7 @@ from .driver import Driver
 from .oracle import Oracle
 
 main_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+JAVA = 'java'
 
 with open(os.path.join(main_path, 'datas', 'filters.txt')) as f:
     lines = f.read().splitlines()
@@ -40,7 +41,8 @@ def baksmali(dex_file, output_dir='out'):
     dex to smali
     '''
     baksmali_path = os.path.join(main_path, 'smali', 'baksmali.jar')
-    cmd = 'java -jar {} d {} -o {}'.format(baksmali_path, dex_file, output_dir)
+    cmd = '{} -jar {} d {} -o {}'.format(JAVA,
+                                         baksmali_path, dex_file, output_dir)
     print(cmd)
     subprocess.call(cmd, shell=True)
     clean(output_dir)
@@ -53,7 +55,8 @@ def smali(smali_dir, output_file='out.dex'):
     smali to dex
     '''
     smali_path = os.path.join(main_path, 'smali', 'smali.jar')
-    cmd = 'java -jar {} a {} -o {}'.format(smali_path, smali_dir, output_file)
+    cmd = '{} -jar {} a {} -o {}'.format(JAVA,
+                                         smali_path, smali_dir, output_file)
     subprocess.call(cmd, shell=True)
 
     return output_file
