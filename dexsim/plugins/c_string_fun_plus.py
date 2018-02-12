@@ -80,7 +80,8 @@ class STRING_FUN_PLUS(Plugin):
                 try:
                     flag, new_body = self.process_body(body, array_snippet)
                 except TIMEOUT_EXCEPTION:
-                    pass
+                    continue
+
                 if flag:
                     mtd.set_body('\n'.join(new_body))
                     mtd.set_modified(True)
