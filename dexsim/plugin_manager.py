@@ -32,6 +32,7 @@ class PluginManager(object):
         for filename in os.listdir(plugin_path):
             if filename.endswith(".py") and filename != "__init__.py":
                 names.append(filename[:-3])
+        names.sort()
         return names
 
     def __init__plugins(self):
@@ -55,5 +56,5 @@ class PluginManager(object):
                 if not clazz.enabled:
                     print("Don't load plugin", clazz.name)
                     continue
-
+                
                 self.__plugins.append(clazz(self.driver, self.smalidir))
