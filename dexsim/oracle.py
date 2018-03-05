@@ -11,7 +11,6 @@ class Oracle:
 
         self.driver = driver
         self.smalidir = SmaliDir(smali_dir, include=includes, exclude=FILTERS)
-        print(len(self.smalidir))
         self.plugin_manager = PluginManager(self.driver, self.smalidir)
 
     def divine(self):
