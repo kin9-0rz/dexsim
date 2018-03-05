@@ -290,7 +290,7 @@ class Plugin(object):
 
             if value[1] == 'null':
                 continue
-
+            
             # json_item, mtd, old_content, rtn_name
             for item in self.target_contexts[key]:
                 old_body = item[0].get_body()

@@ -127,8 +127,7 @@ class STRING_FUN_PLUS(Plugin):
                 if not isinstance(result, str):
                     result = str(result)
 
-                new_line = 'const-string %s, "%s"' % (
-                    rtname, result.encode('unicode-escape').decode())
+                new_line = 'const-string %s, "%s"' % (rtname, result)
                 if 'array' in new_body[-2]:
                     del new_body[-1]
                     del new_body[-1]
@@ -203,8 +202,7 @@ class STRING_FUN_PLUS(Plugin):
                 if not isinstance(result, str):
                     result = str(result)
 
-                new_line = 'const-string %s, "%s"' % (
-                    rtname, result.encode('unicode-escape').decode())
+                new_line = 'const-string %s, "%s"' % (rtname, result)
                 if 'array' in new_body[-2]:
                     del new_body[-1]
                     del new_body[-1]
