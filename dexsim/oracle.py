@@ -7,10 +7,11 @@ from .plugin_manager import PluginManager
 
 class Oracle:
 
-    def __init__(self, smali_dir, driver, include_str):
+    def __init__(self, smali_dir, driver, includes):
 
         self.driver = driver
-        self.smalidir = SmaliDir(smali_dir, FILTERS)
+        self.smalidir = SmaliDir(smali_dir, include=includes, exclude=FILTERS)
+        print(len(self.smalidir))
         self.plugin_manager = PluginManager(self.driver, self.smalidir)
 
     def divine(self):
