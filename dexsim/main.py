@@ -28,11 +28,11 @@ def clean(smali_dir):
             shutil.rmtree(xpath)
 
 
-def dexsim(dex_file, smali_dir, include_str):
+def dexsim(dex_file, smali_dir, includes):
     driver = Driver()
     driver.push_to_dss(dex_file)
 
-    oracle = Oracle(smali_dir, driver, include_str)
+    oracle = Oracle(smali_dir, driver, includes)
     oracle.divine()
 
 
@@ -63,7 +63,7 @@ def smali(smali_dir, output_file='out.dex'):
 
 
 def main(args):
-    include_str = args.i
+    includes = args.includes
 
     # Debug mode
     logs.DEBUG = args.d
@@ -86,7 +86,7 @@ def main(args):
         else:
             smali_dir = args.f
         dex_file = smali(smali_dir, os.path.basename(smali_dir) + '.dex')
-        dexsim_dex(dex_file, smali_dir, include_str, output_dex)
+        dexsim_dex(dex_file, smali_dir, includes, output_dex)
     elif Magic(args.f).get_type() == 'apk':
         apk_path = args.f
 
@@ -109,19 +109,19 @@ def main(args):
         dex_file = os.path.join(tempdir, 'new.dex')
 
         # smali(smali_dir, dex_file)
-        dexsim_dex(args.f, smali_dir, include_str, output_dex)
+        dexsim_dex(args.f, smali_dir, includes, output_dex)
         if not logs.DEBUG:
             shutil.rmtree(tempdir)
     elif Magic(args.f).get_type() == 'dex':
         dex_file = os.path.basename(args.f)
         baksmali(dex_file, smali_dir)
-        dexsim_dex(dex_file, smali_dir, include_str, output_dex)
+        dexsim_dex(dex_file, smali_dir, includes, output_dex)
     else:
         print("Please give smali_dir/dex/apk.")
 
 
-def dexsim_dex(dex_file, smali_dir, include_str, output_dex):
-    dexsim(dex_file, smali_dir, include_str)
+def dexsim_dex(dex_file, smali_dir, includes, output_dex):
+    dexsim(dex_file, smali_dir, includes)
     if output_dex:
         smali(smali_dir, output_dex)
     else:
@@ -135,7 +135,7 @@ def dexsim_dex(dex_file, smali_dir, include_str, output_dex):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='dexsim', description='')
     parser.add_argument('f', help='Smali Directory / DEX / APK')
-    parser.add_argument('-i',
+    parser.add_argument('-i', '--includes', nargs='*',
                         help='Only optimize methods and\
                         classes matching the pattern, e.g. La/b/c;->decode')
     parser.add_argument('-o', help='output file path')
