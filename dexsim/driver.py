@@ -3,7 +3,8 @@ import logging
 import os
 import tempfile
 
-from adbwrapper import ADB
+# from adbwrapper import ADB
+from pyadb3 import ADB
 
 from . import logs
 

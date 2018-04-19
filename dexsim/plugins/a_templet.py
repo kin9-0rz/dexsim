@@ -89,13 +89,17 @@ class TEMPLET(Plugin):
                     # 这里有一个问题，之前已经执行过的代码，为什么还要执行？
                     self.emu.call(snippet, thrown=False)
 
-                    rnames = self.get_arguments_name(old_content, groups[-4])
+                    if protos:
+                        # rnames 存放寄存器名
+                        rnames = self.get_arguments_name(
+                            old_content, groups[-4])
+                        arguments = self.gen_arguments(
+                            protos, rnames, self.emu.vm.variables)
 
-                    arguments = self.get_arguments_1(
-                        protos, rnames, self.emu.vm.variables)
-
-                    if not arguments:
-                        continue
+                        if not arguments:
+                            continue
+                    else:
+                        arguments = []  # 无参
 
                     json_item = self.get_json_item(
                         cls_name, mtd_name, arguments)
@@ -109,7 +113,7 @@ class TEMPLET(Plugin):
     @staticmethod
     def get_arguments_name(line, result):
         """
-        获取解密方法的参数名
+        获取解密方法的寄存器名
         """
         # invoke-static {v14, v16} => [v14, v16]
         if 'range' not in line:
@@ -126,11 +130,11 @@ class TEMPLET(Plugin):
 
         return args_names
 
-    def get_arguments_1(self, protos, rnames, registers):
+    def gen_arguments(self, protos, rnames, registers):
         '''
-        xx
+        生成解密函数的参数列表，传给DSS，格式为：
+        "arguments": ["I:198", "I:115", "I:26"]
         '''
-        # 参数获取 "arguments": ["I:198", "I:115", "I:26"]}
         arguments = []
         ridx = -1
         for item in protos:
