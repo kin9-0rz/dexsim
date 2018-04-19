@@ -1,5 +1,5 @@
 powerzip
-adbwrapper
+pyadb3
 cigam
 pyaml
 smafile

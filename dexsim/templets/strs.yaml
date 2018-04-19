@@ -2,6 +2,13 @@
     enabled: 1
     type: 1
     protos:
+    pattern:
+      - invoke-static \{\}, (.*?);->(.*?)\(\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s
+-  S:
+    enabled: 1
+    type: 1
+    protos:
       - Ljava/lang/String;
     pattern:
       - const-string (.*?), ".*?"\s*
