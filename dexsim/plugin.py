@@ -104,8 +104,9 @@ class Plugin(object):
                 self.emu2.call(re.split(r'\n\s*', body), thrown=False)
                 self.emu2.call(re.split(r'\n\s*', body), thrown=False)
                 args.update(self.emu2.vm.variables)
-
-                for (key, value) in self.emu2.vm.variables.items():
+                
+                tmpx = self.emu2.vm.variables.copy()
+                for (key, value) in tmpx.items():
                     if clz_sig in key:
                         field = self.smalidir.get_field(key)
                         field.set_value(value)
