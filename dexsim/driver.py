@@ -39,21 +39,21 @@ class Driver:
         self.cmd_set_new = ['echo', 'Yes', '>', '/data/local/dss_data/new']
 
         self.adb = ADB()
-        self.adb.shell_command(self.cmd_set_new)
+        self.adb.run_shell_cmd(self.cmd_set_new)
 
     def start_dss(self):
-        self.adb.shell_command(self.cmd_dss_start)
+        self.adb.run_shell_cmd(self.cmd_dss_start)
 
     def stop_dss(self):
-        self.adb.shell_command(self.cmd_dss_stop)
+        self.adb.run_shell_cmd(self.cmd_dss_stop)
 
     def push_to_dss(self, apk_path):
         self.adb.run_cmd(['push', apk_path, DSS_APK_PATH])
 
     def decode(self, targets):
         self.adb.run_cmd(['push', targets, DSS_TARGETS_PATH])
-        self.adb.shell_command(self.cmd_set_finish)
-        self.adb.shell_command(self.cmd_dss)
+        self.adb.run_shell_cmd(self.cmd_set_finish)
+        self.adb.run_shell_cmd(self.cmd_dss)
 
         self.start_dss()
 
@@ -62,7 +62,7 @@ class Driver:
         while 1:
             time.sleep(3)
             counter += 3
-            self.adb.shell_command(self.cmd_get_finish)
+            self.adb.run_shell_cmd(self.cmd_get_finish)
             output = self.adb.get_output().decode('utf-8', errors='ignore')
             if 'Yes' in output:
                 break
@@ -81,16 +81,16 @@ class Driver:
             size = len(ofile.read())
             if not size:
                 self.adb.run_cmd(['pull', DSS_EXCEPTION_PATH, 'exception.txt'])
-                self.adb.shell_command(['rm', DSS_EXCEPTION_PATH])
+                self.adb.run_shell_cmd(['rm', DSS_EXCEPTION_PATH])
             else:
                 ofile.seek(0)
                 result = json.load(ofile)
 
         if not logs.DEBUG:
-            self.adb.shell_command(['rm', DSS_OUTPUT_PATH])
-            self.adb.shell_command(['rm', DSS_TARGETS_PATH])
+            self.adb.run_shell_cmd(['rm', DSS_OUTPUT_PATH])
+            self.adb.run_shell_cmd(['rm', DSS_TARGETS_PATH])
         else:
-            self.adb.shell_command(['pull', DSS_TARGETS_PATH])
+            self.adb.run_shell_cmd(['pull', DSS_TARGETS_PATH])
         os.unlink(output_path)
 
         self.stop_dss()
