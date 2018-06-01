@@ -51,6 +51,9 @@ class Driver:
         self.adb.run_cmd(['push', apk_path, DSS_APK_PATH])
 
     def decode(self, targets):
+        '''
+        推送解密配置到手机/模拟器，让DSS读取解密配置。
+        '''
         self.adb.run_cmd(['push', targets, DSS_TARGETS_PATH])
         self.adb.run_shell_cmd(self.cmd_set_finish)
         self.adb.run_shell_cmd(self.cmd_dss)
