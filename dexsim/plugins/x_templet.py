@@ -108,7 +108,7 @@ class TEMPLET(Plugin):
                         json_item, mtd, old_content, rtn_name)
 
         self.optimize()
-        self.clear()
+        
 
     @staticmethod
     def get_arguments_name(line, result):
