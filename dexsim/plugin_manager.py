@@ -43,6 +43,7 @@ class PluginManager(object):
         module_path = os.path.dirname(pkg)[1:].replace(
             os.sep, '.') + '.' + self.plugin_dir + '.'
 
+        # TODO 能否让插件具有优先级
         for name in self.plugin_filenames:
             # (name, loader, origin)
             spec = importlib.util.find_spec(module_path + name)
