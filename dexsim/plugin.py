@@ -70,47 +70,36 @@ class Plugin(object):
     @timeout(1)
     def pre_process(self, snippet):
         """
-        预处理 sget指令
-        """
-        # emu2 = Emulator()
-        args = {}
+        smaliemu 处理sget等获取类的变量时，是直接从变量池中取等。
+        所以，对于这些指令，可以预先初始化。
 
-        clz_sigs = set()
-        field_desc_prog = re.compile(r'^.*, (.*?->.*)$')
+        先执行Feild Value插件，对类的成员变量进行解密，再进行处理。
+
+        TODO 其他指令，其他参数
+        """
+        args = {}
+        # sget-object v0, clz_name;->field_name:Ljava/util/List;
+        # 能够作为参数的值，数字、字符串、数组等；而不是其他
         for line in snippet:
             if 'sget' not in line:
                 continue
 
-            field_desc = field_desc_prog.match(line).groups()[0]
-
+            field_desc = line.split()[-1]
             try:
                 field = self.smalidir.get_field(field_desc)
+                if not field:
+                    continue
             except TypeError as ex:
                 logger.warning(ex)
                 logger(field_desc)
                 continue
 
-            if field:
-                value = field.get_value()
-                if value:
-                    args.update({field_desc: value})
-                    continue
-            clz_sigs.add(field_desc.split('->')[0])
+            value = field.get_value()
+            if not value:
+                continue
 
-        for clz_sig in clz_sigs:
-            mtd = self.smalidir.get_method(clz_sig, '<clinit>()V')
-            if mtd:
-                body = mtd.get_body()
-                self.emu2.call(re.split(r'\n\s*', body), thrown=False)
-                self.emu2.call(re.split(r'\n\s*', body), thrown=False)
-                args.update(self.emu2.vm.variables)
-                
-                tmpx = self.emu2.vm.variables.copy()
-                for (key, value) in tmpx.items():
-                    if clz_sig in key:
-                        field = self.smalidir.get_field(key)
-                        field.set_value(value)
-        # print(__name__, 'pre_process, emu2', sys.getsizeof(self.emu2))
+            args.update({field_desc: value})
+
         return args
 
     @staticmethod
@@ -177,7 +166,7 @@ class Plugin(object):
     def get_vm_variables(self, snippet, args, rnames):
         """
         snippet : smali 代码
-        args    ：方法藏书
+        args    ：方法参数
         rnames  ：寄存器
 
         获取当前vm的变量
@@ -307,6 +296,7 @@ class Plugin(object):
                 self.make_changes = True
 
         self.smali_files_update()
+        self.clear()
 
     def clear(self):
         """

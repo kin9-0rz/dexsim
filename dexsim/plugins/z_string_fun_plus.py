@@ -64,12 +64,14 @@ class STRING_FUN_PLUS(Plugin):
         print('Run ' + __name__, end=' ', flush=True)
         self.project_a()
 
-        # for ptn, mtd_filter in self.patterns:
-        #     self._process(ptn, mtd_filter)
-
     def project_a(self):
+        mset = set(['<clinit>', '<init>'])
         for sf in self.smalidir:
             for mtd in sf.get_methods():
+                # field value 插件已经处理好了，不需要再次处理
+                if mtd.get_name() in mset:
+                    continue
+
                 body = mtd.get_body()
                 for k in self.progs:
                     if k in mtd.get_body():
