@@ -70,7 +70,7 @@ class Driver:
             if 'Yes' in output:
                 break
 
-            if counter > 180:
+            if counter > 120:
                 print("Time out")
                 self.stop_dss()
                 return
