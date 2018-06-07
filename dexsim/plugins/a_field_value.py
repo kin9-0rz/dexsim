@@ -35,24 +35,55 @@ class FieldValue(Plugin):
             'data': []
         }
         for sf in self.smalidir:
+            if self.skip(sf):
+                continue
+
             json_item = {
                 'className': self.smali2java(sf.get_class()),
                 'fieldName': []
             }
+            counter = 0
             for f in sf.get_fields():
                 if f.get_type() != 'Ljava/lang/String;':
                     continue
 
                 if f.get_value():
                     continue
-
+                
+                if f.get_is_static():
+                    counter += 1
+                
                 # 格式:如果ID是FieldValue，则直接取对应的Field，不执行解密方法
                 json_item['fieldName'].append(f.get_name())
             
+            # 没静态变量，则跳过
+            if counter < 1:
+                continue
+
             if json_item['fieldName']:
                 self.json_list['data'].append(json_item)
         
         self.optimize()
+
+    def skip(self, sf):
+        '''
+        跳过没静态构造函数的类
+        
+        因为没有需要初始化的变量，不做任何处理；而且，有可能导致一些奇怪的错误。
+        '''
+        # 
+        m = sf.get_method('<clinit>')
+        if not m:
+            return True
+        
+        m = sf.get_method('<init>')
+        # 没有构造函数，不需要跳过
+        if not m:
+            return False
+        # java.lang.RuntimeException: Can't create handler inside thread that has not called Looper.prepare()
+        if 'Landroid/os/Handler;-><init>' in m.get_body():
+            return True
+        return False
 
     @staticmethod
     def smali2java(smali_clz):
