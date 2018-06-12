@@ -7,7 +7,7 @@ from smaliemu.emulator import Emulator
 
 from ..plugin import Plugin
 
-__all__ = ["TEMPLET"]
+PLUGIN_CLASS_NAME = "TEMPLET"
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ class TEMPLET(Plugin):
     name = "TEMPLET"
     enabled = True
     tname = None
+    index = 1
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
@@ -108,7 +109,6 @@ class TEMPLET(Plugin):
                         json_item, mtd, old_content, rtn_name)
 
         self.optimize()
-        
 
     @staticmethod
     def get_arguments_name(line, result):
