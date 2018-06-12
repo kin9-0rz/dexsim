@@ -7,7 +7,8 @@ from timeout3 import TIMEOUT_EXCEPTION
 
 from ..plugin import Plugin
 
-__all__ = ["TEMPLET_PLUS"]
+PLUGIN_CLASS_NAME = "TEMPLET_PLUS"
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class TEMPLET_PLUS(Plugin):
     name = "TEMPLET_PLUS"
     enabled = True
     tname = None
+    index = 2
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
@@ -37,7 +39,7 @@ class TEMPLET_PLUS(Plugin):
             r'\(((?:B|S|C|I|J|F|D|Ljava/lang/String;|'
             r'\[B|\[S|\[C|\[I|\[J|\[F|\[D|\[Ljava/lang/String;'
             r')*?)\)Ljava/lang/String;')
-        
+
         # 匹配proto
         PROTO_RE = (
             r'(B|S|C|I|J|F|D|Ljava/lang/String;|'
@@ -109,7 +111,7 @@ class TEMPLET_PLUS(Plugin):
             cname = result.groups()[1][1:].replace('/', '.')
             mname = result.groups()[2]
             protos = self.proto_ptn.findall(result.groups()[3])
-            
+
             # 初始化所有寄存器
             del snippet[-1]
             snippet.extend(array_data_content)
@@ -156,7 +158,7 @@ class TEMPLET_PLUS(Plugin):
                 continue
 
             json_item = self.get_json_item(cname, mname,
-                                            arguments)
+                                           arguments)
             # {id}_{rtn_name} 让这个唯一化，便于替换
             old_content = '# %s' % json_item['id']
 
@@ -168,7 +170,7 @@ class TEMPLET_PLUS(Plugin):
                 # 为了避免 '# abc_v10' 替换成 '# abc_v1'
                 old_content = old_content + '_' + rtn_name + 'X'
                 self.append_json_item(json_item, mtd, old_content,
-                                        rtn_name)
+                                      rtn_name)
             else:
                 old_content = old_content + '_X'
                 self.append_json_item(

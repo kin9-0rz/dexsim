@@ -25,6 +25,7 @@ class Plugin(object):
     description = ''
     version = ''
     enabled = True
+    index = 0 # 插件执行顺序；最小值为0，数值越大，执行越靠后。
 
     # const/16 v2, 0x1a
     CONST_NUMBER = r'const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s+'
