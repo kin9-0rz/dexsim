@@ -107,7 +107,7 @@ class TEMPLET(Plugin):
 
                     self.append_json_item(
                         json_item, mtd, old_content, rtn_name)
-
+             
         self.optimize()
 
     @staticmethod
@@ -121,7 +121,7 @@ class TEMPLET(Plugin):
 
         # invoke-static/range {v14 .. v16} => [v14, v15, v16]
         args_names = []
-        tmp = re.match(r'v(\d+).*?(\d+)', result)
+        tmp = re.match(r'(\d+).*?(\d+)', result)
         if not tmp:
             return
         start, end = tmp.groups()

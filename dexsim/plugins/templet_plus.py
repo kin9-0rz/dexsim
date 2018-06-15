@@ -35,7 +35,7 @@ class TEMPLET_PLUS(Plugin):
 
         # 匹配参数为内置类型的静态调用函数
         INVOKE_STATIC_RE = (
-            r'invoke-static.*?{([v\.\d,\s]*)}, (.*?);->(.*?)'
+            r'invoke-static.*?{([(v|p)\.\d,\s]*)}, (.*?);->(.*?)'
             r'\(((?:B|S|C|I|J|F|D|Ljava/lang/String;|'
             r'\[B|\[S|\[C|\[I|\[J|\[F|\[D|\[Ljava/lang/String;'
             r')*?)\)Ljava/lang/String;')
@@ -97,12 +97,12 @@ class TEMPLET_PLUS(Plugin):
             if flag:
                 new_body.append(line)
                 continue
-
+            
             result = self.invoke_static_ptn.match(line)
             if not result:
                 new_body.append(line)
                 continue
-
+            
             # 参数名(寄存器的名)，类名，方法名，proto(简称)
             # register_name, class_name, mtd_name, protos
             # ('v1, v2, v3', 'Lcom/game/pay/sdk/y', 'a', 'ISB')
