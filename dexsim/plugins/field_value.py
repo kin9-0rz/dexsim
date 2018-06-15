@@ -19,7 +19,7 @@ class FieldValue(Plugin):
     这个插件只需要执行一次
     """
     name = "FieldValue"
-    enabled = True
+    enabled = False
     tname = None
     index = 0
 

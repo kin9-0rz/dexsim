@@ -224,7 +224,7 @@ class Plugin(object):
         if rtn_name:
             new_content = 'const-string %s, ' % rtn_name + '%s'
         else:
-            # TODO XX 也许有更好的方式
+            # TODO 也许有更好的方式
             # const-string v0, "Dexsim"
             # const-string v1, "Decode String"
             # invoke-static {v0, v1}, Landroid/util/Log;->d(
