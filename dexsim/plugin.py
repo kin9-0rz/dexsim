@@ -171,14 +171,12 @@ class Plugin(object):
         rnames  ：寄存器
 
         获取当前vm的变量
-        """
-        self.emu2.call(snippet[-5:], args=args, thrown=False)
 
-        # 注意： 寄存器的值，如果是跨方法的话，可能存在问题 —— 导致解密乱码
-        # A方法的寄存器v1，与B方法的寄存器v1，保存的内容不一定一样
-        # TODO 下一个方法，则进行清理
-        # 方法成员变量，可以考虑初始化到smalifile中
-        # 其他临时变量，则用smali执行
+        """
+        # 原本想法是，行数太多，执行过慢；而参数一般在前几行
+        # 可能执行5句得倒的结果，跟全部执行的不一样
+        # TODO 有一定的几率，得到奇怪的参数，导致解密结果异常
+        self.emu2.call(snippet[-5:], args=args, thrown=False)
         result = self.varify_argments(self.emu2.vm.variables, rnames)
         if result:
             return self.emu2.vm.variables
@@ -273,6 +271,7 @@ class Plugin(object):
             return
 
         for key, value in outputs.items():
+            # TODO success 这个有意义么？
             if 'success' not in value:
                 continue
             if key not in self.target_contexts:

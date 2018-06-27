@@ -77,7 +77,6 @@ class TEMPLET(Plugin):
 
                     old_content = i.group()
                     groups = i.groups()
-
                     cls_name = groups[-3][1:].replace('/', '.')
                     mtd_name = groups[-2]
                     rtn_name = groups[-1]
@@ -101,7 +100,7 @@ class TEMPLET(Plugin):
                             continue
                     else:
                         arguments = []  # 无参
-
+                    
                     json_item = self.get_json_item(
                         cls_name, mtd_name, arguments)
 

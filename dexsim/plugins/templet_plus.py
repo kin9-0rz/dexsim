@@ -119,7 +119,7 @@ class TEMPLET_PLUS(Plugin):
                 args.update(self.pre_process(snippet))
             except TIMEOUT_EXCEPTION:
                 pass
-
+            
             try:
                 registers = self.get_vm_variables(
                     snippet, args, rnames)

@@ -1,4 +1,12 @@
--  S:
+-  SO:
+    enabled: 1
+    type: 1
+    protos:
+      - Object
+    pattern:
+      - invoke-static \{(.*?)\}, (.*?);->(.*?)\((.*?)\)Ljava/lang/String;\s*
+      - move-result-object (.*?)\s
+-  S0:
     enabled: 1
     type: 1
     protos:
