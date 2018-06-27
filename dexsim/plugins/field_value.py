@@ -7,7 +7,7 @@ from smaliemu.emulator import Emulator
 
 from ..plugin import Plugin
 
-__all__ = ["FieldValue"]
+PLUGIN_CLASS_NAME = "FieldValue"
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,7 @@ class FieldValue(Plugin):
     name = "FieldValue"
     enabled = True
     tname = None
+    index = 0
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
@@ -55,14 +56,14 @@ class FieldValue(Plugin):
                 
                 # 格式:如果ID是FieldValue，则直接取对应的Field，不执行解密方法
                 json_item['fieldName'].append(f.get_name())
-            
+
             # 没静态变量，则跳过
             if counter < 1:
                 continue
 
             if json_item['fieldName']:
                 self.json_list['data'].append(json_item)
-        
+
         self.optimize()
 
     def skip(self, sf):
@@ -101,10 +102,10 @@ class FieldValue(Plugin):
         """
         if not self.json_list:
             return
-        
+
         from json import JSONEncoder
         import tempfile
-        
+
         jsons = JSONEncoder().encode(self.json_list)
 
         outputs = {}
@@ -118,7 +119,7 @@ class FieldValue(Plugin):
 
         if isinstance(outputs, str):
             return False
-        
+
         # print(outputs)
 
         # 返回结果 类，变量名，值
@@ -128,16 +129,16 @@ class FieldValue(Plugin):
             clz = self.smali2java(sf.get_class())
             if clz not in outputs.keys():
                 continue
-            
+
             for item in outputs[clz].items():
                 self.update_field(sf, item[0], item[1])
-        
+
         self.make_changes = True
         self.smali_files_update()
         self.clear()
-        
+
     def update_field(self, sf, fieldname, value):
-        
+
         for f in sf.get_fields():
             if f.get_name() != fieldname:
                 continue
