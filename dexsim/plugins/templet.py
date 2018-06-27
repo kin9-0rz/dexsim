@@ -7,7 +7,7 @@ from smaliemu.emulator import Emulator
 
 from ..plugin import Plugin
 
-__all__ = ["TEMPLET"]
+PLUGIN_CLASS_NAME = "TEMPLET"
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ class TEMPLET(Plugin):
     name = "TEMPLET"
     enabled = True
     tname = None
+    index = 1
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
@@ -76,7 +77,6 @@ class TEMPLET(Plugin):
 
                     old_content = i.group()
                     groups = i.groups()
-
                     cls_name = groups[-3][1:].replace('/', '.')
                     mtd_name = groups[-2]
                     rtn_name = groups[-1]
@@ -100,15 +100,14 @@ class TEMPLET(Plugin):
                             continue
                     else:
                         arguments = []  # 无参
-
+                    
                     json_item = self.get_json_item(
                         cls_name, mtd_name, arguments)
 
                     self.append_json_item(
                         json_item, mtd, old_content, rtn_name)
-
+             
         self.optimize()
-        
 
     @staticmethod
     def get_arguments_name(line, result):
@@ -121,7 +120,7 @@ class TEMPLET(Plugin):
 
         # invoke-static/range {v14 .. v16} => [v14, v15, v16]
         args_names = []
-        tmp = re.match(r'v(\d+).*?(\d+)', result)
+        tmp = re.match(r'(\d+).*?(\d+)', result)
         if not tmp:
             return
         start, end = tmp.groups()

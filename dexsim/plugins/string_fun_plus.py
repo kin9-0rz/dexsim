@@ -10,7 +10,7 @@ from ..plugin import Plugin
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["STRING_FUN_PLUS"]
+PLUGIN_CLASS_NAME = "STRING_FUN_PLUS"
 
 
 class STRING_FUN_PLUS(Plugin):
@@ -21,6 +21,7 @@ class STRING_FUN_PLUS(Plugin):
     '''
     name = "STRING_FUN_PLUS"
     enabled = True
+    index = 3
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
