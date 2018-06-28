@@ -25,7 +25,7 @@ class TEMPLET_PLUS(Plugin):
     用于匹配那些比较麻烦的解密方法，相对比较耗时——有时候，会超级耗时
     '''
     name = "TEMPLET_PLUS"
-    enabled = True
+    enabled = False
     tname = None
     index = 2
 

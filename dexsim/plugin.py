@@ -220,15 +220,10 @@ class Plugin(object):
         """
         mid = json_item['id']
         if rtn_name:
-            new_content = 'const-string %s, ' % rtn_name + '%s'
+            new_content = 'const-string ' + rtn_name + ', "{}"'
         else:
-            # TODO 也许有更好的方式
-            # const-string v0, "Dexsim"
-            # const-string v1, "Decode String"
-            # invoke-static {v0, v1}, Landroid/util/Log;->d(
-            # Ljava/lang/String;Ljava/lang/String;)I
             new_content = ('const-string v0, "Dexsim"\n'
-                           'const-string v1, %s\n'
+                           'const-string v1, "{}"\n'
                            'invoke-static {v0, v1}, Landroid/util/Log;->d'
                            '(Ljava/lang/String;Ljava/lang/String;)I\n')
 
@@ -271,25 +266,18 @@ class Plugin(object):
             return
 
         for key, value in outputs.items():
-            # TODO success 这个有意义么？
-            if 'success' not in value:
-                continue
             if key not in self.target_contexts:
                 logger.warning('not found %s', key)
                 continue
 
-            if value[1] == 'null':
+            if value[0] == 'null':
                 continue
             
             # json_item, mtd, old_content, rtn_name
             for item in self.target_contexts[key]:
                 old_body = item[0].get_body()
                 old_content = item[1]
-                new_content = item[2] % value[1]
-
-                # It's not a string.
-                if outputs[key][1] == 'null':
-                    continue
+                new_content = item[2].format(value[0])
 
                 item[0].set_body(old_body.replace(old_content, new_content))
                 item[0].set_modified(True)
