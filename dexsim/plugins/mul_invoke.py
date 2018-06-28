@@ -36,7 +36,7 @@ class MUL_INVOKE(Plugin):
     如果继续执行，会导致无限循环。
     '''
     name = "MUL_INVOKE"
-    enabled = True
+    enabled = False
     tname = None
     index = 4
     ONE_TIME = False # 表示该插件只执行一次
