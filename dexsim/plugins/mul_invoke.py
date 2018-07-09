@@ -27,6 +27,9 @@ android_strs = [
 ]
 
 
+DEBUG = True
+
+
 class MUL_INVOKE(Plugin):
     '''
     这个插件只能执行一次
@@ -36,7 +39,7 @@ class MUL_INVOKE(Plugin):
     如果继续执行，会导致无限循环。
     '''
     name = "MUL_INVOKE"
-    enabled = False
+    enabled = True
     tname = None
     index = 4
     ONE_TIME = False # 表示该插件只执行一次
@@ -81,7 +84,7 @@ class MUL_INVOKE(Plugin):
             return
         print('Run ' + __name__, end=' ', flush=True)
         self.__process()
-        self.done = True
+        self.ONE_TIME = True
 
     def __process(self):
         for sf in self.smalidir:
@@ -109,10 +112,11 @@ class MUL_INVOKE(Plugin):
                 return True
 
     def _process_mtd(self, mtd):
-        # from colorclass.color import Color
-        # print('\n', '+' * 100)
-        # print('Starting to decode ...')
-        # print(Color.green(mtd))
+        if DEBUG:
+            from colorclass.color import Color
+            print('\n', '+' * 100)
+            print('Starting to decode ...')
+            print(Color.green(mtd))
         # 如果存在数组
         array_data_content = []
         arr_res = self.arr_data_ptn.search(mtd.get_body())
@@ -141,11 +145,15 @@ class MUL_INVOKE(Plugin):
             # 函数有两种类型：
             # 1. 字符串内置类型 - smaliemu能直接执行
             # 2. 其他类型 - 需要发射调用
-            # print('LINE:', Color.red(line))
+            if DEBUG:
+                print('LINE:', Color.red(line))
+
             if 'Ljava/lang/String;->' in line:
                 if '<init>' not in line:
                     continue
-                # print(Color('{autoyellow}process new string...{/yellow} '))
+                
+                if DEBUG:
+                    print(Color('{autoyellow}process new string...{/yellow} '))
 
                 # 如果是字符串函数，参数为[B/[C/[I，则考虑
                 rtn_name, rnames = SmaliLine.parse_string(line)
@@ -172,7 +180,9 @@ class MUL_INVOKE(Plugin):
 
                 result = ''.join(chr(x) for x in ll)
 
-                # print(result)
+                if DEBUG:
+                    print(result)
+
                 # 更新寄存器
                 args[rtn_name] = result
                 # 更新代码

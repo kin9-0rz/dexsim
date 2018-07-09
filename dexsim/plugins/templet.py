@@ -106,7 +106,7 @@ class TEMPLET(Plugin):
 
                     self.append_json_item(
                         json_item, mtd, old_content, rtn_name)
-             
+
         self.optimize()
 
     @staticmethod
