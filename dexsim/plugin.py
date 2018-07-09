@@ -133,14 +133,9 @@ class Plugin(object):
         if typ8 == 'Ljava/lang/String;':
             if not isinstance(value, str):
                 return None
-
-            import codecs
-            item = codecs.getdecoder('unicode_escape')(value)[0]
-            args = []
-            for i in item.encode("UTF-8"):
-                args.append(i)
-            return "java.lang.String:" + str(args)
-
+            # smali 会把非ascii字符串转换为unicode字符串
+            # java 可以直接处理unicode字符串
+            return "java.lang.String:" + value
         if typ8 == '[B':
             if not isinstance(value, list):
                 return None
@@ -224,7 +219,7 @@ class Plugin(object):
         else:
             new_content = ('const-string v0, "Dexsim"\n'
                            'const-string v1, "{}"\n'
-                           'invoke-static {v0, v1}, Landroid/util/Log;->d'
+                           'invoke-static {{v0, v1}}, Landroid/util/Log;->d'
                            '(Ljava/lang/String;Ljava/lang/String;)I\n')
 
         if mid not in self.target_contexts:
@@ -266,17 +261,19 @@ class Plugin(object):
             return
 
         for key, value in outputs.items():
+            print(key, value)
             if key not in self.target_contexts:
                 logger.warning('not found %s', key)
                 continue
 
-            if value[0] == 'null':
+            if not value[0] or value[0] == 'null':
                 continue
             
             # json_item, mtd, old_content, rtn_name
             for item in self.target_contexts[key]:
                 old_body = item[0].get_body()
                 old_content = item[1]
+                print(item[2], value[0])
                 new_content = item[2].format(value[0])
 
                 item[0].set_body(old_body.replace(old_content, new_content))
