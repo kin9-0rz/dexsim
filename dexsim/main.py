@@ -136,8 +136,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='dexsim', description='')
     parser.add_argument('f', help='Smali Directory / DEX / APK')
     parser.add_argument('-i', '--includes', nargs='*',
-                        help='Only optimize methods and\
-                        classes matching the pattern, e.g. La/b/c;->decode')
+                        help='仅仅处理smali路径包含该路径的文件')
     parser.add_argument('-o', help='output file path')
     parser.add_argument('-d', action='store_true', help='DEBUG MODE')
 

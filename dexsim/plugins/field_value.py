@@ -1,19 +1,22 @@
 import logging
 import os
 import re
+import tempfile
+from json import JSONEncoder
 
 import yaml
+from smafile import smali2java
 from smaliemu.emulator import Emulator
 
-from ..plugin import Plugin
+from dexsim import DEBUG
+from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "FieldValue"
-
-logger = logging.getLogger(__name__)
 
 
 class FieldValue(Plugin):
     """
+    针对那些<clint>中自动初始化的字符串类型字段ield，
     获取字符串类型的Field，直接获取Field的值。
 
     这个插件只需要执行一次
@@ -23,11 +26,18 @@ class FieldValue(Plugin):
     tname = None
     index = 0
 
+    ONE_TIME = True
+    ot_flag = False
+
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
 
     def run(self):
-        print('Run ' + __name__, end=' ', flush=True)
+        if self.ot_flag:
+            return
+        if self.ONE_TIME:
+            self.ot_flag = True
+        print('Run', __name__, end=' ', flush=True)
         self.__process()
 
     def __process(self):
@@ -40,20 +50,20 @@ class FieldValue(Plugin):
                 continue
 
             json_item = {
-                'className': self.smali2java(sf.get_class()),
+                'className': smali2java(sf.get_class()),
                 'fieldName': []
             }
             counter = 0
             for f in sf.get_fields():
-                if f.get_type() != 'Ljava/lang/String;':
+                if 'Ljava/lang/String;' not in f.get_type():
                     continue
 
                 if f.get_value():
                     continue
-                
+
                 if f.get_is_static():
                     counter += 1
-                
+
                 # 格式:如果ID是FieldValue，则直接取对应的Field，不执行解密方法
                 json_item['fieldName'].append(f.get_name())
 
@@ -69,42 +79,32 @@ class FieldValue(Plugin):
     def skip(self, sf):
         '''
         跳过没静态构造函数的类
-        
+
         因为没有需要初始化的变量，不做任何处理；而且，有可能导致一些奇怪的错误。
         '''
-        # 
+        #
         m = sf.get_method('<clinit>')
         if not m:
             return True
-        
+
         m = sf.get_method('<init>')
         # 没有构造函数，不需要跳过
         if not m:
             return False
-        # java.lang.RuntimeException: Can't create handler inside thread that has not called Looper.prepare()
+        # java.lang.RuntimeException:
+        # Can't create handler inside thread that has not called Looper.prepare()
         if 'Landroid/os/Handler;-><init>' in m.get_body():
             return True
         return False
-
-    @staticmethod
-    def smali2java(smali_clz):
-        return smali_clz.replace('/', '.')[1:-1]
-
-    @staticmethod
-    def java2smali(java_clz):
-        return 'L' + java_clz.replace('', '/') + ';'
 
     def optimize(self):
         """
         把Field的值，写回到smali中
 
-        因为Field本来就是唯一，所以，不需要ID，一些繁琐的东西。
+        因为Field本来就是唯一，所以，不需要ID
         """
         if not self.json_list:
             return
-
-        from json import JSONEncoder
-        import tempfile
 
         jsons = JSONEncoder().encode(self.json_list)
 
@@ -120,13 +120,13 @@ class FieldValue(Plugin):
         if isinstance(outputs, str):
             return False
 
-        # print(outputs)
+        if DEBUG:
+            print()
+            for k, v in outputs.items():
+                print(k, v)
 
-        # 返回结果 类，变量名，值
-        # for clz, fvs in outputs.items():
-        #     print(clz, fvs)
         for sf in self.smalidir:
-            clz = self.smali2java(sf.get_class())
+            clz = smali2java(sf.get_class())
             if clz not in outputs.keys():
                 continue
 
@@ -142,4 +142,9 @@ class FieldValue(Plugin):
         for f in sf.get_fields():
             if f.get_name() != fieldname:
                 continue
-            f.set_value(value)
+            if '[Ljava/lang/String;' == f.get_type():
+                import ast
+                value = ast.literal_eval(value)
+                f.set_value(value)
+            else:
+                f.set_value(value)

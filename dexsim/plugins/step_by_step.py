@@ -18,7 +18,7 @@ from timeout3 import TIMEOUT_EXCEPTION
 
 from ..plugin import Plugin
 
-PLUGIN_CLASS_NAME = "MUL_INVOKE"
+PLUGIN_CLASS_NAME = "STEP_BY_STEP"
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ android_strs = [
 DEBUG = True
 
 
-class MUL_INVOKE(Plugin):
+class STEP_BY_STEP(Plugin):
     '''
     这个插件只能执行一次
 
@@ -38,8 +38,8 @@ class MUL_INVOKE(Plugin):
     不会替换掉原来的方法。
     如果继续执行，会导致无限循环。
     '''
-    name = "MUL_INVOKE"
-    enabled = True
+    name = "STEP_BY_STEP"
+    enabled = False
     tname = None
     index = 4
     ONE_TIME = False # 表示该插件只执行一次
@@ -117,6 +117,7 @@ class MUL_INVOKE(Plugin):
             print('\n', '+' * 100)
             print('Starting to decode ...')
             print(Color.green(mtd))
+        
         # 如果存在数组
         array_data_content = []
         arr_res = self.arr_data_ptn.search(mtd.get_body())
@@ -429,10 +430,3 @@ class MUL_INVOKE(Plugin):
 
         return outputs
 
-    @staticmethod
-    def smali2java(smali_clz):
-        return smali_clz.replace('/', '.')[1:-1]
-
-    @staticmethod
-    def java2smali(java_clz):
-        return 'L' + java_clz.replace('', '/') + ';'

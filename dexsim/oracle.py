@@ -8,9 +8,20 @@ from .plugin_manager import PluginManager
 class Oracle:
 
     def __init__(self, smali_dir, driver, includes):
-
+        '''
+        Lcom/a/b
+        Lcom/a/b;-b
+        Lcom/La/b;
+        La/b;
+        '''
         self.driver = driver
-        self.smalidir = SmaliDir(smali_dir, include=includes, exclude=FILTERS)
+
+        paths = []
+        if includes:
+            for item in includes:
+                paths.append(item[1:].split(';')[0])
+
+        self.smalidir = SmaliDir(smali_dir, include=paths, exclude=FILTERS)
         self.plugin_manager = PluginManager(self.driver, self.smalidir)
 
     def divine(self):

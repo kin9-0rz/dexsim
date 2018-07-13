@@ -13,6 +13,7 @@ from json import JSONEncoder
 
 from smaliemu.emulator import Emulator
 from timeout3 import timeout
+from dexsim import DEBUG
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,8 @@ class Plugin(object):
     enabled = True
     index = 0 # 插件执行顺序；最小值为0，数值越大，执行越靠后。
 
+    # TODO 这个得放到库中
+    
     # const/16 v2, 0x1a
     CONST_NUMBER = r'const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s+'
     # ESCAPE_STRING = '''"(.*?)(?<!\\\\)"'''
@@ -54,11 +57,16 @@ class Plugin(object):
     data_arraies = {}
     # smali methods witch have been update
     smali_mtd_updated_set = set()
+    
+    # 存放field的内容，各个插件通用。
+    fields = {}
 
-    def __init__(self, driver, smalidir):
+    def __init__(self, driver, smalidir, mfilters=None):
         self.make_changes = False
         self.driver = driver
         self.smalidir = smalidir
+        # method filters
+        self.mfilters = mfilters
         # self.smali_files = smali_files
 
         self.emu = Emulator()
@@ -77,6 +85,7 @@ class Plugin(object):
         先执行Feild Value插件，对类的成员变量进行解密，再进行处理。
 
         TODO 其他指令，其他参数
+        FIXME 注意，这种方法不一定能获取到参数，改用其他方式吧。
         """
         args = {}
         # sget-object v0, clz_name;->field_name:Ljava/util/List;
@@ -247,12 +256,19 @@ class Plugin(object):
             return
 
         jsons = JSONEncoder().encode(self.json_list)
+        if DEBUG:
+            print("\nJSON内容(解密类、方法、参数)：")
+            print(jsons)
 
         outputs = {}
         with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tfile:
             tfile.write(jsons)
         outputs = self.driver.decode(tfile.name)
         os.unlink(tfile.name)
+
+        if DEBUG:
+            print("解密结果:")
+            print(outputs)
 
         if not outputs:
             return
@@ -261,7 +277,6 @@ class Plugin(object):
             return
 
         for key, value in outputs.items():
-            print(key, value)
             if key not in self.target_contexts:
                 logger.warning('not found %s', key)
                 continue
@@ -269,11 +284,16 @@ class Plugin(object):
             if not value[0] or value[0] == 'null':
                 continue
             
+            if not value[0].isprintable():
+                print("解密结果不可读：", key, value)
+                continue
+
             # json_item, mtd, old_content, rtn_name
             for item in self.target_contexts[key]:
                 old_body = item[0].get_body()
                 old_content = item[1]
-                print(item[2], value[0])
+                if DEBUG:
+                    print(item[2], value[0])
                 new_content = item[2].format(value[0])
 
                 item[0].set_body(old_body.replace(old_content, new_content))
