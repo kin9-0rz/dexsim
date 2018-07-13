@@ -5,11 +5,12 @@ import re
 import yaml
 from smaliemu.emulator import Emulator
 
-from ..plugin import Plugin
+from dexsim import DEBUG
+from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "TEMPLET"
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 class TEMPLET(Plugin):
@@ -22,7 +23,7 @@ class TEMPLET(Plugin):
     name = "TEMPLET"
     enabled = True
     tname = None
-    index = 1
+    index = 2
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
@@ -50,7 +51,9 @@ class TEMPLET(Plugin):
                     self.tname = key
                     if not value['enabled']:
                         continue
-                    logger.debug('Load ' + self.tname)
+
+                    if DEBUG:
+                        print('Load ' + self.tname)
                     if value['protos']:
                         protos = [i.replace('\\', '')
                                   for i in value['protos']]
@@ -87,6 +90,7 @@ class TEMPLET(Plugin):
 
                     # 执行解密方法之前的代码，获得各个寄存器的值
                     # 这里有一个问题，之前已经执行过的代码，为什么还要执行？
+                    # FIXME 没有必要
                     self.emu.call(snippet, thrown=False)
 
                     if protos:
@@ -100,7 +104,7 @@ class TEMPLET(Plugin):
                             continue
                     else:
                         arguments = []  # 无参
-                    
+
                     json_item = self.get_json_item(
                         cls_name, mtd_name, arguments)
 

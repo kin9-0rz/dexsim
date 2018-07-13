@@ -1,34 +1,31 @@
-"""
-字符串内置函数
-"""
-import logging
 import re
 
 from timeout3 import TIMEOUT_EXCEPTION, timeout
 
-from ..plugin import Plugin
+from dexsim.plugin import Plugin
+from smafile import SmaliLine
 
-logger = logging.getLogger(__name__)
-
-PLUGIN_CLASS_NAME = "STRING_FUN_PLUS"
+PLUGIN_CLASS_NAME = "STRING_FUNC"
 
 
-class STRING_FUN_PLUS(Plugin):
+class STRING_FUNC(Plugin):
     '''
     模拟执行字符串相关函数
 
+    这个插件针对的是，参数是能够直接从smali文件中获取的情况。
+
+    否则，就走Step by Step插件。
+
     String, StringBuilder, StringBuffer等。
     '''
-    name = "STRING_FUN_PLUS"
-    enabled = False
-    index = 3
+    name = "STRING_FUNC"
+    enabled = True
+    index = 1
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
         self.make_changes = False
-
         self.arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
-
         self.patterns = [
             (
                 r'invoke-direct {(v\d+), v\d+}, '
@@ -63,14 +60,21 @@ class STRING_FUN_PLUS(Plugin):
 
     def run(self):
         print('Run ' + __name__, end=' ', flush=True)
-        self.project_a()
+        self.processes()
 
-    def project_a(self):
+    @staticmethod
+    def skip_init(mtd_name):
+        '''
+        FieldValue 插件已经处理，不需要再次处理
+        '''
         mset = set(['<clinit>', '<init>'])
+        return mtd_name in mset
+
+    def processes(self):
+
         for sf in self.smalidir:
             for mtd in sf.get_methods():
-                # field value 插件已经处理好了，不需要再次处理
-                if mtd.get_name() in mset:
+                if self.skip_init(mtd.get_name()):
                     continue
 
                 body = mtd.get_body()
@@ -79,21 +83,28 @@ class STRING_FUN_PLUS(Plugin):
                         break
                 else:
                     continue
-                array_snippet = self.get_array_snippet(body)
+
                 try:
-                    flag, new_body = self.process_body(body, array_snippet)
+                    flag, new_body = self.process_body(body)
                 except TIMEOUT_EXCEPTION:
                     continue
 
-                if flag:
-                    mtd.set_body('\n'.join(new_body))
-                    mtd.set_modified(True)
-                    self.make_changes = True
+                if not flag:
+                    continue
+
+                mtd.set_body('\n'.join(new_body))
+                mtd.set_modified(True)
+                self.make_changes = True
 
         self.smali_files_update()
 
     @timeout(1)
-    def process_body(self, body, arrs):
+    def process_body(self, body):
+        '''
+        返回(结果、新的方法体)
+        '''
+        array_snippet = self.get_array_snippet(body)
+
         lines = re.split(r'\n', body)
 
         flag = False
@@ -101,6 +112,26 @@ class STRING_FUN_PLUS(Plugin):
         snippet = []
         args = {}
         for line in lines:
+            if not line:
+                continue
+            
+            if 'move-result-object' in line and 'const-string' in new_body[-1]:
+                # 这种情况会导致反编译工具反编译失败
+                # const-string v9, "bytes="
+                # move-result-object v9
+                print(line, new_body[-1])
+
+                v0 = SmaliLine.parse(line)
+                vx, string_id = SmaliLine.parse(new_body[-1])
+
+                print(v0, vx, string_id)
+
+                if v0 != vx:
+                    new_line = 'const-string {}, "{}"'.format(v0, string_id)
+                    new_body[-1] = new_line
+                print(line, new_body[-1])
+                continue
+
             snippet.append(line)
 
             for _, prog in self.progs.items():
@@ -113,28 +144,38 @@ class STRING_FUN_PLUS(Plugin):
                     snippet.clear()
                 new_body.append(line)
                 continue
-
+            
             rtname = result.groups()[0]
 
-            snippet.append('return-object %s' % rtname)
-            snippet.extend(arrs)
+            snippet.append('return-object {}'.format(rtname))
+            snippet.extend(array_snippet)
             args.update(self.pre_process(snippet))
+
+            if 'substring' in line:
+                print(snippet)
 
             self.emu.call(snippet, args=args, thrown=False)
 
+
             args = self.emu.vm.variables
             result = self.emu.vm.result
+
+            if 'substring' in line:
+                print(args)
+                print(result)
 
             if result:
                 flag = True
                 if not isinstance(result, str):
                     result = str(result)
-
-                new_line = 'const-string %s, "%s"' % (rtname, result)
+                new_line = 'const-string {}, "{}"'.format(rtname, result)
+                print(new_line)
                 if 'array' in new_body[-2]:
                     del new_body[-1]
                     del new_body[-1]
                 new_body.append(new_line)
+                print(new_body)
+                print(new_body[-1])
             else:
                 new_body.append(line)
 
@@ -142,84 +183,9 @@ class STRING_FUN_PLUS(Plugin):
 
         return (flag, new_body)
 
-    def _process(self, ptn, mtd_filter):
-
-        prog = re.compile(ptn)
-
-        for sf in self.smalidir:
-            for mtd in sf.get_methods():
-                body = mtd.get_body()
-                if mtd_filter not in body:
-                    continue
-                try:
-                    self.proc_mtd(mtd, prog)
-                except TIMEOUT_EXCEPTION:
-                    pass
-        self.smali_files_update()
-
     def get_array_snippet(self, mtd_body):
         result = self.arr_data_prog.search(mtd_body)
         if result:
             return re.split(r'\n\s', result.group())
         else:
             return []
-
-    @timeout(1)
-    def proc_mtd(self, mtd, prog):
-        # 如果存在数组，则抽取数组部分的smali代码
-        array_data_content = []
-        result = self.arr_data_prog.search(mtd.get_body())
-        if result:
-            array_data_content = re.split(r'\n\s', result.group())
-
-        flag = False
-        new_body = []
-        snippet = []
-        args = {}
-        lines = re.split(r'\n', mtd.get_body())
-
-        for line in lines:
-            snippet.append(line)
-
-            result = prog.search(line)
-            if not result:
-                # 如果smali代码存在非字符串调用，则清理所有代码
-                if line.startswith('invoke-') and 'Ljava/lang/String' not in line:
-                    snippet.clear()
-                new_body.append(line)
-                continue
-            rtname = result.groups()[0]
-
-            snippet.append('return-object %s' % rtname)
-            snippet.extend(array_data_content)
-
-            args.update(self.pre_process(snippet))
-
-            self.emu.call(snippet, args=args, thrown=False)
-
-            args = self.emu.vm.variables
-            result = self.emu.vm.result
-
-            if result:
-                flag = True
-                if not isinstance(result, str):
-                    result = str(result)
-
-                new_line = 'const-string %s, "%s"' % (rtname, result)
-                if 'array' in new_body[-2]:
-                    del new_body[-1]
-                    del new_body[-1]
-                new_body.append(new_line)
-            else:
-                new_body.append(line)
-
-            snippet.clear()
-
-        if flag:
-            mtd.set_body('\n'.join(new_body))
-            mtd.set_modified(True)
-            self.make_changes = True
-
-    @timeout(1)
-    def run_snippet(self, snippet, args):
-        self.emu.call(snippet, args=args, thrown=False)
