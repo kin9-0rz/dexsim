@@ -3,10 +3,12 @@
 利用APK动态加载解密，旧逻辑(dex-oracle)在old分支。
 
 **之前**
-[](https://raw.githubusercontent.com/mikusjelly/dexsim/master/imgs/before.png)
+
+![](https://raw.githubusercontent.com/mikusjelly/dexsim/master/imgs/before.png)
 
 **之后**
-[](https://raw.githubusercontent.com/mikusjelly/dexsim/master/imgs/after.png)
+
+![](https://raw.githubusercontent.com/mikusjelly/dexsim/master/imgs/after.png)
 
 
 ## 安装
