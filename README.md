@@ -1,6 +1,12 @@
 # dexsim
 
-利用APK动态加载解密，旧逻辑在old分支。
+利用APK动态加载解密，旧逻辑(dex-oracle)在old分支。
+
+**之前**
+[](https://github.com/mikusjelly/dexsim/blob/master/imgs/before.png)
+
+**之后**
+[](https://github.com/mikusjelly/dexsim/blob/master/imgs/after.png)
 
 
 ## 安装
@@ -27,8 +33,3 @@
 4. 至少启动dss应用一次（没有启动过的APP可能接收不到广播）
 5. 执行 `dexsim apk`
 
-## 其他说明
-
-具体想法在Doc.md中。
-
-样本则在dexsim-samples项目中备份。
