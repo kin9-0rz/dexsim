@@ -124,7 +124,7 @@ class TEMPLET(Plugin):
 
         # invoke-static/range {v14 .. v16} => [v14, v15, v16]
         args_names = []
-        tmp = re.match(r'(\d+).*?(\d+)', result)
+        tmp = re.match(r'v(\d+) \.\. v(\d+)', result)
         if not tmp:
             return
         start, end = tmp.groups()
