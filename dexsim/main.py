@@ -43,7 +43,6 @@ def baksmali(dex_file, output_dir='out'):
     baksmali_path = os.path.join(main_path, 'smali', 'baksmali.jar')
     cmd = '{} -jar {} d {} -o {}'.format(JAVA,
                                          baksmali_path, dex_file, output_dir)
-    print(cmd)
     subprocess.call(cmd, shell=True)
     clean(output_dir)
 

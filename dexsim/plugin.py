@@ -224,7 +224,7 @@ class Plugin(object):
         """
         mid = json_item['id']
         if rtn_name:
-            new_content = 'const-string ' + rtn_name + ', "{}"'
+            new_content = 'const-string ' + rtn_name + ', "{}"\n'
         else:
             new_content = ('const-string v0, "Dexsim"\n'
                            'const-string v1, "{}"\n'

@@ -1,7 +1,7 @@
 import logging
 import os
 
-DEBUG = True
+DEBUG = False
 
 MAIN_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 

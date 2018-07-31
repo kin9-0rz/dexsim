@@ -10,8 +10,6 @@ from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "TEMPLET"
 
-# logger = logging.getLogger(__name__)
-
 
 class TEMPLET(Plugin):
     """
@@ -77,29 +75,25 @@ class TEMPLET(Plugin):
                     array_data_content = re.split(r'\n\s', result.group())
 
                 for i in prog.finditer(mtd.get_body()):
-
                     old_content = i.group()
                     groups = i.groups()
+
+                    # 模板主要用于获取类、方法、返回寄存器、参数寄存器（可能存在无参）
                     cls_name = groups[-3][1:].replace('/', '.')
                     mtd_name = groups[-2]
                     rtn_name = groups[-1]
 
+                    
+                    # 由于参数的个数不一致，所以，不好直接获取，直接通过简单运算获取
                     snippet = re.split(r'\n\s', old_content)[:-2]
-
                     snippet.extend(array_data_content)
-
-                    # 执行解密方法之前的代码，获得各个寄存器的值
-                    # 这里有一个问题，之前已经执行过的代码，为什么还要执行？
-                    # FIXME 没有必要
                     self.emu.call(snippet, thrown=False)
 
                     if protos:
                         # rnames 存放寄存器名
-                        rnames = self.get_arguments_name(
-                            old_content, groups[-4])
+                        rnames = self.get_arguments_name(old_content, groups[-4])
                         arguments = self.gen_arguments(
                             protos, rnames, self.emu.vm.variables)
-
                         if not arguments:
                             continue
                     else:
@@ -115,6 +109,16 @@ class TEMPLET(Plugin):
 
     @staticmethod
     def get_arguments_name(line, result):
+        '''获取参数寄存器
+        
+        Arguments:
+            line {String} -- 
+            result {String}} -- [description]
+        
+        Returns:
+            [type] -- [description]
+        '''
+
         """
         获取解密方法的寄存器名
         """
@@ -139,6 +143,9 @@ class TEMPLET(Plugin):
         "arguments": ["I:198", "I:115", "I:26"]
         '''
         arguments = []
+        if rnames is None:
+            return arguments
+
         ridx = -1
         for item in protos:
             ridx += 1
