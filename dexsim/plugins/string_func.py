@@ -119,17 +119,13 @@ class STRING_FUNC(Plugin):
                 # 这种情况会导致反编译工具反编译失败
                 # const-string v9, "bytes="
                 # move-result-object v9
-                print(line, new_body[-1])
 
                 v0 = SmaliLine.parse(line)
                 vx, string_id = SmaliLine.parse(new_body[-1])
 
-                print(v0, vx, string_id)
-
                 if v0 != vx:
                     new_line = 'const-string {}, "{}"'.format(v0, string_id)
                     new_body[-1] = new_line
-                print(line, new_body[-1])
                 continue
 
             snippet.append(line)
@@ -151,31 +147,19 @@ class STRING_FUNC(Plugin):
             snippet.extend(array_snippet)
             args.update(self.pre_process(snippet))
 
-            if 'substring' in line:
-                print(snippet)
-
             self.emu.call(snippet, args=args, thrown=False)
-
-
             args = self.emu.vm.variables
             result = self.emu.vm.result
-
-            if 'substring' in line:
-                print(args)
-                print(result)
 
             if result:
                 flag = True
                 if not isinstance(result, str):
                     result = str(result)
                 new_line = 'const-string {}, "{}"'.format(rtname, result)
-                print(new_line)
                 if 'array' in new_body[-2]:
                     del new_body[-1]
                     del new_body[-1]
                 new_body.append(new_line)
-                print(new_body)
-                print(new_body[-1])
             else:
                 new_body.append(line)
 
