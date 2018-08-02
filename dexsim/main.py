@@ -9,9 +9,9 @@ from time import clock
 
 from cigam import Magic
 
-from . import logs
-from .driver import Driver
-from .oracle import Oracle
+from dexsim import logs
+from dexsim.driver import Driver
+from dexsim.oracle import Oracle
 
 main_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 JAVA = 'java'
@@ -62,13 +62,11 @@ def smali(smali_dir, output_file='out.dex'):
 
 
 def main(args):
+    logs.isdebuggable = args.d
     includes = args.includes
 
-    # Debug mode
-    logs.DEBUG = args.d
-    # logs.DEBUG = DEBUG
     smali_dir = None
-    if logs.DEBUG:
+    if logs.isdebuggable:
         smali_dir = os.path.join(os.path.abspath(os.curdir), 'smali')
     else:
         smali_dir = tempfile.mkdtemp()
@@ -89,7 +87,7 @@ def main(args):
     elif Magic(args.f).get_type() == 'apk':
         apk_path = args.f
 
-        if logs.DEBUG:
+        if logs.isdebuggable:
             tempdir = os.path.join(os.path.abspath(os.curdir), 'tmp_dir')
             if not os.path.exists(tempdir):
                 os.mkdir(tempdir)
@@ -109,7 +107,7 @@ def main(args):
 
         # smali(smali_dir, dex_file)
         dexsim_dex(args.f, smali_dir, includes, output_dex)
-        if not logs.DEBUG:
+        if not logs.isdebuggable:
             shutil.rmtree(tempdir)
     elif Magic(args.f).get_type() == 'dex':
         dex_file = os.path.basename(args.f)
@@ -127,7 +125,7 @@ def dexsim_dex(dex_file, smali_dir, includes, output_dex):
         smali(smali_dir,
               os.path.splitext(os.path.basename(dex_file))[0] + '.sim.dex')
 
-    if not logs.DEBUG:
+    if not logs.isdebuggable:
         shutil.rmtree(smali_dir)
 
 
@@ -137,7 +135,8 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--includes', nargs='*',
                         help='仅仅处理smali路径包含该路径的文件')
     parser.add_argument('-o', help='output file path')
-    parser.add_argument('-d', action='store_true', help='DEBUG MODE')
+    parser.add_argument('-d', action='store_true',
+                        help='logs.isdebuggable MODE')
 
     args = parser.parse_args()
 

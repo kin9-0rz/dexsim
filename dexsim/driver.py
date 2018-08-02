@@ -3,10 +3,9 @@ import logging
 import os
 import tempfile
 
-# from adbwrapper import ADB
 from pyadb3 import ADB
 
-from . import logs
+from dexsim import logs
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +88,7 @@ class Driver:
                 ofile.seek(0)
                 result = json.load(ofile)
 
-        if not logs.DEBUG:
+        if not logs.isdebuggable:
             self.adb.run_shell_cmd(['rm', DSS_OUTPUT_PATH])
             self.adb.run_shell_cmd(['rm', DSS_TARGETS_PATH])
         else:

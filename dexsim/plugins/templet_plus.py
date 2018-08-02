@@ -5,8 +5,8 @@ from time import clock
 from smaliemu.emulator import Emulator
 from timeout3 import TIMEOUT_EXCEPTION
 
-from ..plugin import Plugin
-from dexsim import DEBUG
+from dexsim import logs
+from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "TEMPLET_PLUS"
 
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 android_strs = [
     'Ljava/lang/System;', 'Landroid/os/Environment', 'Ljava/lang/String;->'
 ]
+
 
 class TEMPLET_PLUS(Plugin):
     '''
@@ -69,15 +70,15 @@ class TEMPLET_PLUS(Plugin):
                 if 'Lcom/cmcc/papp/a/a;->b(Context, String)V' not in str(mtd):
                     continue
 
-                if DEBUG:
+                if logs.isdebuggable:
                     from colorclass.color import Color
                     print()
                     print(Color.red(str(mtd)))
-                
+
                 self._process_mtd(mtd)
             self.optimize()
             self.clear()
-   
+
     def get_field_value(self, json_item):
         """
         把Field的值，写回到smali中
@@ -100,10 +101,10 @@ class TEMPLET_PLUS(Plugin):
         outputs = self.driver.decode(tfile.name)
         import os
         os.unlink(tfile.name)
-        
+
         if not outputs:
             return False
-        
+
         print(outputs)
         cname = json_item['className']
         fname = json_item['fieldName'][0]
@@ -115,7 +116,6 @@ class TEMPLET_PLUS(Plugin):
             return ast.literal_eval(value)
 
         return value
-
 
     def _process_mtd(self, mtd):
         # 如果存在数组
@@ -150,7 +150,7 @@ class TEMPLET_PLUS(Plugin):
                     continue
 
                 abs_fname = self.java2smali(cname) + '->' + fname + ':' + rtype
-                
+
                 if abs_fname in self.fields.keys():
                     continue
 
@@ -170,11 +170,11 @@ class TEMPLET_PLUS(Plugin):
                 }
                 print(json_item)
                 self.feild_datas['data'].append(json_item)
-                
+
                 value = self.get_field_value(json_item)
                 if not value:
                     continue
-                
+
                 self.fields[abs_fname] = value
                 continue
 
@@ -191,17 +191,18 @@ class TEMPLET_PLUS(Plugin):
             if flag:
                 new_body.append(line)
                 continue
-            
+
             # result = self.invoke_static_ptn.match(line)
             # if not result:
             #     new_body.append(line)
             #     continue
-            
+
             # print(result)
 
             from smafile import SmaliLine
-            cname, mname, protos, rtype, rnames = SmaliLine.parse_invoke_static(line)
-            
+            cname, mname, protos, rtype, rnames = SmaliLine.parse_invoke_static(
+                line)
+
             # 参数名(寄存器的名)，类名，方法名，proto(简称)
             # register_name, class_name, mtd_name, protos
             # ('v1, v2, v3', 'Lcom/game/pay/sdk/y', 'a', 'ISB')
@@ -220,12 +221,12 @@ class TEMPLET_PLUS(Plugin):
             #     args.update(self.pre_process(snippet))
             # except TIMEOUT_EXCEPTION:
             #     pass
-            
+
             try:
                 # registers = self.get_vm_variables(
                 #     snippet, args, rnames)
                 # args = registers if registers else args
-                if DEBUG:
+                if logs.isdebuggable:
                     print('smali代码：')
                     print(snippet)
                 self.emu.call(snippet, args=args, cv=True, thrown=False)
@@ -235,7 +236,7 @@ class TEMPLET_PLUS(Plugin):
                         if v is None:
                             continue
                         args[k] = v
-                
+
                 registers = args
 
             except TIMEOUT_EXCEPTION:
@@ -267,8 +268,8 @@ class TEMPLET_PLUS(Plugin):
                 if argument is None:
                     break
                 arguments.append(argument)
-            
-            if DEBUG:
+
+            if logs.isdebuggable:
                 print('解密参数:')
                 print(arguments)
 
@@ -298,6 +299,6 @@ class TEMPLET_PLUS(Plugin):
 
         mtd.set_body('\n'.join(old_body))
 
-        if DEBUG:
+        if logs.isdebuggable:
             print("解密方法内容：")
             print(self.json_list)

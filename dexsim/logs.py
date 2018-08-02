@@ -1,7 +1,4 @@
-"""
-日志记录
-"""
-DEBUG = False
+isdebuggable = False
 # import logging
 
 # # set up logging to file - see previous section for more details
