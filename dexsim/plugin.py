@@ -13,23 +13,19 @@ from json import JSONEncoder
 
 from smaliemu.emulator import Emulator
 from timeout3 import timeout
-from dexsim import DEBUG
+
+from dexsim import logs
 
 logger = logging.getLogger(__name__)
 
 
 class Plugin(object):
-    """
-    解密插件基类
-    """
     name = 'Plugin'
     description = ''
     version = ''
     enabled = True
-    index = 0 # 插件执行顺序；最小值为0，数值越大，执行越靠后。
+    index = 0  # 插件执行顺序；最小值为0，数值越大，执行越靠后。
 
-    # TODO 这个得放到库中
-    
     # const/16 v2, 0x1a
     CONST_NUMBER = r'const(?:\/\d+) [vp]\d+, (-?0x[a-f\d]+)\s+'
     # ESCAPE_STRING = '''"(.*?)(?<!\\\\)"'''
@@ -57,7 +53,7 @@ class Plugin(object):
     data_arraies = {}
     # smali methods witch have been update
     smali_mtd_updated_set = set()
-    
+
     # 存放field的内容，各个插件通用。
     fields = {}
 
@@ -169,13 +165,15 @@ class Plugin(object):
 
     @timeout(3)
     def get_vm_variables(self, snippet, args, rnames):
-        """
-        snippet : smali 代码
-        args    ：方法参数
-        rnames  ：寄存器
+        """获取当前vm的变量
 
-        获取当前vm的变量
+        Args:
+            snippet (list): smali 代码
+            args (dict): 方法参数
+            rnames (list): 寄存器
 
+        Returns:
+            dict: 返回vm的变量池/寄存器池
         """
         # 原本想法是，行数太多，执行过慢；而参数一般在前几行
         # 可能执行5句得倒的结果，跟全部执行的不一样
@@ -256,7 +254,7 @@ class Plugin(object):
             return
 
         jsons = JSONEncoder().encode(self.json_list)
-        if DEBUG:
+        if logs.isdebuggable:
             print("\nJSON内容(解密类、方法、参数)：")
             print(jsons)
 
@@ -266,7 +264,7 @@ class Plugin(object):
         outputs = self.driver.decode(tfile.name)
         os.unlink(tfile.name)
 
-        if DEBUG:
+        if logs.isdebuggable:
             print("解密结果:")
             print(outputs)
 
@@ -283,7 +281,7 @@ class Plugin(object):
 
             if not value[0] or value[0] == 'null':
                 continue
-            
+
             if not value[0].isprintable():
                 print("解密结果不可读：", key, value)
                 continue
@@ -292,7 +290,7 @@ class Plugin(object):
             for item in self.target_contexts[key]:
                 old_body = item[0].get_body()
                 old_content = item[1]
-                if DEBUG:
+                if logs.isdebuggable:
                     print(item[2], value[0])
                 new_content = item[2].format(value[0])
 
@@ -304,16 +302,22 @@ class Plugin(object):
         self.clear()
 
     def clear(self):
-        """
-        每次解密完毕后，都需要清理。
+        """每次解密完毕后，都需要清理。
+
+        Returns:
+            None
+
         """
         self.json_list.clear()
         self.target_contexts.clear()
 
     def smali_files_update(self):
-        '''
-            write changes to smali files
-        '''
+        """更新Smali文件
+
+        Returns:
+            type: None
+
+        """
         if self.make_changes:
             for sf in self.smalidir:
                 sf.update()

@@ -1,3 +1,4 @@
+import ast
 import logging
 import os
 import re
@@ -8,7 +9,7 @@ import yaml
 from smafile import smali2java
 from smaliemu.emulator import Emulator
 
-from dexsim import DEBUG
+from dexsim import logs
 from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "FieldValue"
@@ -92,7 +93,8 @@ class FieldValue(Plugin):
         if not m:
             return False
         # java.lang.RuntimeException:
-        # Can't create handler inside thread that has not called Looper.prepare()
+        # Can't create handler inside thread that has not called
+        # Looper.prepare()
         if 'Landroid/os/Handler;-><init>' in m.get_body():
             return True
         return False
@@ -120,8 +122,7 @@ class FieldValue(Plugin):
         if isinstance(outputs, str):
             return False
 
-        if DEBUG:
-            print()
+        if logs.isdebuggable:
             for k, v in outputs.items():
                 print(k, v)
 
@@ -138,12 +139,22 @@ class FieldValue(Plugin):
         self.clear()
 
     def update_field(self, sf, fieldname, value):
+        """Short summary.
 
+        Args:
+            sf (SmaliFeild): Smali字段类
+            fieldname (String): 字段名
+            value (Object): 字段值（数值、字符串、列表等，根据实际类型赋值）
+
+        Returns:
+            None
+        """
         for f in sf.get_fields():
             if f.get_name() != fieldname:
                 continue
             if '[Ljava/lang/String;' == f.get_type():
-                import ast
+                if 'null' in value:
+                    return
                 value = ast.literal_eval(value)
                 f.set_value(value)
             else:

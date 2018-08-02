@@ -1,9 +1,9 @@
 import re
 
+from smafile import SmaliLine
 from timeout3 import TIMEOUT_EXCEPTION, timeout
 
 from dexsim.plugin import Plugin
-from smafile import SmaliLine
 
 PLUGIN_CLASS_NAME = "STRING_FUNC"
 
@@ -21,6 +21,7 @@ class STRING_FUNC(Plugin):
     name = "STRING_FUNC"
     enabled = True
     index = 1
+    ONE_TIME = False
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
@@ -59,8 +60,11 @@ class STRING_FUNC(Plugin):
             self.progs[mtd_filter] = re.compile(ptn)
 
     def run(self):
+        if self.ONE_TIME:
+            return
         print('Run ' + __name__, end=' ', flush=True)
         self.processes()
+        self.ONE_TIME = True
 
     @staticmethod
     def skip_init(mtd_name):
@@ -114,7 +118,7 @@ class STRING_FUNC(Plugin):
         for line in lines:
             if not line:
                 continue
-            
+
             if 'move-result-object' in line and 'const-string' in new_body[-1]:
                 # 这种情况会导致反编译工具反编译失败
                 # const-string v9, "bytes="
@@ -140,7 +144,7 @@ class STRING_FUNC(Plugin):
                     snippet.clear()
                 new_body.append(line)
                 continue
-            
+
             rtname = result.groups()[0]
 
             snippet.append('return-object {}'.format(rtname))

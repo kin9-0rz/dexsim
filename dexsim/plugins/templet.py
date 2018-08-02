@@ -5,7 +5,7 @@ import re
 import yaml
 from smaliemu.emulator import Emulator
 
-from dexsim import DEBUG
+from dexsim import logs
 from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "TEMPLET"
@@ -50,7 +50,7 @@ class TEMPLET(Plugin):
                     if not value['enabled']:
                         continue
 
-                    if DEBUG:
+                    if logs.isdebuggable:
                         print('Load ' + self.tname)
                     if value['protos']:
                         protos = [i.replace('\\', '')
@@ -83,7 +83,6 @@ class TEMPLET(Plugin):
                     mtd_name = groups[-2]
                     rtn_name = groups[-1]
 
-                    
                     # 由于参数的个数不一致，所以，不好直接获取，直接通过简单运算获取
                     snippet = re.split(r'\n\s', old_content)[:-2]
                     snippet.extend(array_data_content)
@@ -91,7 +90,8 @@ class TEMPLET(Plugin):
 
                     if protos:
                         # rnames 存放寄存器名
-                        rnames = self.get_arguments_name(old_content, groups[-4])
+                        rnames = self.get_arguments_name(
+                            old_content, groups[-4])
                         arguments = self.gen_arguments(
                             protos, rnames, self.emu.vm.variables)
                         if not arguments:
@@ -110,11 +110,11 @@ class TEMPLET(Plugin):
     @staticmethod
     def get_arguments_name(line, result):
         '''获取参数寄存器
-        
+
         Arguments:
-            line {String} -- 
+            line {String} --
             result {String}} -- [description]
-        
+
         Returns:
             [type] -- [description]
         '''
