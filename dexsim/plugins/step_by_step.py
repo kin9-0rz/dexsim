@@ -98,10 +98,10 @@ class STEP_BY_STEP(Plugin):
                     continue
                 if logs.isdebuggable:
                     print(Color.red(mtd))
-                # TODO 不知道能否用线程池
                 if self.skip_mtd(mtd):
                     continue
                 self._process_mtd(mtd)
+
         # 强制更新
         for sf in self.smalidir:
             sf.update()

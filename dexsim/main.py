@@ -4,8 +4,8 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 import zipfile
-from time import clock
 
 from cigam import Magic
 
@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    start = clock()
+    start = time.time()
     main(args)
-    finish = clock()
+    finish = time.time()
     print('\n%fs' % (finish - start))
