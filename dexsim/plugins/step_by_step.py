@@ -17,7 +17,7 @@ from json import JSONEncoder
 
 import yaml
 from colorclass.color import Color
-from smafile import SmaliLine, smali2java
+from smafile import SmaliLine, java2smali, smali2java
 from smaliemu.emulator import Emulator
 from timeout3 import TIMEOUT_EXCEPTION
 
@@ -94,8 +94,10 @@ class STEP_BY_STEP(Plugin):
             for mtd in sf.get_methods():
                 if logs.isdebuggable:
                     print(mtd)
-                if 'Lcom/ice/jake/ae' not in str(mtd):
-                    continue
+                # if 'com/android/internal/wrapper/NativeWrapper;->' not in str(mtd):
+                #     continue
+                # if 'eMPGsXR()Ljava/lang/Class;' not in str(mtd):
+                #     continue
                 if logs.isdebuggable:
                     print(Color.red(mtd))
                 if self.skip_mtd(mtd):
@@ -129,10 +131,13 @@ class STEP_BY_STEP(Plugin):
         # 判断方法体内是否存在可以解密的函数
         # 1. func
         # 2. string相关函数
-        if not self.invoke_static_ptn.search(mtd.get_body()):
-            # TODO new string 类的函数，感觉没有必要在这里处理
-            if not self.new_string_ptn.search(mtd.get_body()):
-                return True
+        if self.invoke_static_ptn.search(mtd.get_body()):
+            return False
+
+        if self.new_string_ptn.search(mtd.get_body()):
+            return False
+
+        return True
 
     @staticmethod
     def process_invoke_static_statement(line):
@@ -238,7 +243,7 @@ class STEP_BY_STEP(Plugin):
 
         xget_opcodes = {'iget', 'iget-object', 'sget', 'sget-object'}
 
-        block_args = {'first': {}}
+        block_args = {'first': {}}  # 保存所有分支的执行结果
         last_block_key = 'first'  # 上一个分支-关键字
         this_block_key = 'first'  # 当前分支，默认第一分支
         keys = ['first']  # 默认执行第一分支
@@ -266,7 +271,7 @@ class STEP_BY_STEP(Plugin):
                     print('block_args', block_args)
 
                 # 存在两种情况
-                # 1. 当前代码片段，还没执行；全部执行一次
+                # 1. 当前代码片段(if语句之前的代码)，还没执行；全部执行一次
                 # 2. 当前代码片段，已经执行了一部分，因为解密；从执行后的地方开始执行
 
                 pre_args = {}
@@ -332,14 +337,47 @@ class STEP_BY_STEP(Plugin):
 
             snippet.append(line)
 
+            is_static = True
             if opcode == 'invoke-static':
                 result = self.process_invoke_static_statement(line)
                 if result:
                     cname, mname, ptypes, rtype, rnames = result
                 else:
                     continue
+            # elif opcode == 'invoke-virtual':
+            # TODO 实例方法，目前只考虑无参实例化。
+            #     result = self.process_invoke_static_statement(line)
+            #     if result:
+            #         cname, mname, ptypes, rtype, rnames = result
+            #         print(result)
+            #         # 判断类的构造函数是否为<init>()V
+            #         clz = self.smalidir.get_method(
+            #             java2smali(cname), '<init>()V')
+            #         if not clz:
+            #             continue
+            #         is_static = False
+            #     else:
+            #         continue
             elif opcode in xget_opcodes:
                 self.process_xget_statement(line)
+                continue
+            elif 'Ljava/lang/String;-><init>([B)V' in line:
+                if 'move-result-object' in snippet[0]:
+                    snippet = snippet[1:]
+                self.emu.call(snippet, args=args, cv=True, thrown=False)
+                if not self.emu.vm.result:
+                    continue
+
+                # 如果有结果，则替换
+                vx, _ = SmaliLine.parse(line)
+                new_line = 'const-string {}, "{}"'.format(
+                    vx, self.emu.vm.result)
+                del new_body[-1]
+                new_body.append(new_line)
+                self.make_changes = True
+                mtd.set_modified(True)
+
+                snippet.clear()
                 continue
             else:
                 continue
@@ -351,11 +389,11 @@ class STEP_BY_STEP(Plugin):
                 snippet = self.process_if_statement(snippet)
 
                 if logs.isdebuggable:
-                    print(Color.red('开始处理解密参数'))
+                    print(Color.red('开始处理解密参数 {}'.format(line)))
                     for l in snippet:
                         print(Color.red(l))
 
-                    print(args)
+                    print('args', args)
                     print(block_args)
                     print(keys)
                     print(this_block_key)
@@ -385,8 +423,9 @@ class STEP_BY_STEP(Plugin):
                 registers = args
             except TIMEOUT_EXCEPTION:
                 snippet.clear()
-
                 continue
+
+            print(Color.red('->'))
 
             obj_flag = False
             if len(ptypes) == 1 and ptypes[0][0] == 'L' and ptypes != ['Ljava/lang/String;']:
@@ -396,6 +435,8 @@ class STEP_BY_STEP(Plugin):
             snippet.clear()  # 已经执行过的代码，不再执行
             if not registers and not obj_flag:
                 continue
+
+            print(Color.red('->>'))
 
             # 从寄存器中获取对应的参数
             # 参数获取 "arguments": ["I:198", "I:115", "I:26"]}
@@ -416,12 +457,16 @@ class STEP_BY_STEP(Plugin):
             else:
                 arguments.append('Object:' + smali2java(ptypes[0]))
 
-            # print('参数类型', ptypes)
-            # print('参数值', arguments)
+            if logs.isdebuggable:
+                print(Color.red('->>'))
+                print('参数类型', ptypes)
+                print('参数值', arguments)
             if len(arguments) != len(ptypes):
+                print(Color.red('->> 参数对不上'))
                 continue
 
             json_item = self.get_json_item(cname, mname, arguments)
+            print(json_item)
             # print('生成json item')
 
             # {id}_{rtn_name} 让这个唯一化，便于替换
@@ -429,10 +474,14 @@ class STEP_BY_STEP(Plugin):
             # 如果 move_result_obj 操作存在的话，解密后一起替换
             find = self.move_result_obj_ptn.search(lines[index + 1])
 
+            print(Color.red('->> not fount'))
+
             # 必须要找到返回值操作，用于更新寄存器
             if not find:
-                # print('找不到返回寄存器')
+                print('找不到返回寄存器')
                 continue
+
+            print(Color.red('->>>'))
 
             rtn_name = find.groups()[0]
             # 为了避免 '# abc_v10' 替换成 '# abc_v1'
@@ -461,12 +510,28 @@ class STEP_BY_STEP(Plugin):
                 new_line = 'const-string {}, "{}"'.format(rtn_name, result)
                 new_body.append(new_line)
                 self.make_changes = True
-                # print(args)
                 mtd.set_modified(True)
             elif rtype.startswith('['):
                 args[rtn_name] = result
+                # 把结果保存到当前分支
+
             else:
                 print("返回值并非字符串，也不是B/C数组")
+
+            if args:
+                block_args[this_block_key].update(args)
+
+            # 把结果保存到当前分支
+            if logs.isdebuggable:
+                print(block_args)
+                print('*' * 100)
+            #     print('last_block_key', last_block_key)
+            #     print('this_block_key', this_block_key)
+            #
+            # pre_args = block_args[last_block_key].copy()
+            # if this_block_key in block_args:
+            #     pre_args.update(block_args[this_block_key])
+            # block_args[this_block_key] =
 
         mtd.set_body('\n'.join(new_body))
 
@@ -534,5 +599,8 @@ class STEP_BY_STEP(Plugin):
 
         if rtype.startswith('['):
             return ast.literal_eval(outputs)
+
+        if rtype == 'Ljava/lang/String;':
+            print(outputs)
 
         return outputs
