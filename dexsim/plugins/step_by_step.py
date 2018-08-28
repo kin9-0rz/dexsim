@@ -42,7 +42,7 @@ class STEP_BY_STEP(Plugin):
     如果继续执行，会导致无限循环。
     '''
     name = "STEP_BY_STEP"
-    enabled = True
+    enabled = False
     tname = None
     index = 4
     ONE_TIME = False  # 表示该插件只执行一次
