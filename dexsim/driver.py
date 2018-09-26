@@ -78,6 +78,11 @@ class Driver:
         output_path = os.path.join(tempdir, 'output.json')
         self.adb.run_cmd(
             ['pull', DSS_OUTPUT_PATH, output_path])
+        
+        if not os.path.exists(output_path):
+            print('Could not pull the file {}'.format(output_path))
+            self.stop_dss()
+            return
 
         with open(output_path, mode='r+', encoding='utf-8') as ofile:
             size = len(ofile.read())
