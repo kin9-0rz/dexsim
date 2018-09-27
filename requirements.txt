@@ -5,3 +5,4 @@ pyaml
 smafile
 smaliemu
 timeout3
+colorclass
