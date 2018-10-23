@@ -1,10 +1,5 @@
 #
-# array.py
-# @author mikusjelly
-# @website http://mikusjelly.github.io
-# @license MIT
-# @description 处理多次调用函数的情况
-# @created Tue Jun 12 2018 12:02:59 GMT+0800 (CST)
+# 本模块超级耗时，建议删除不必要的类，再开启本插件进行解密。
 #
 
 
