@@ -3,21 +3,20 @@
 #
 
 
-import ast
 import logging
 import os
 import re
 import tempfile
 from json import JSONEncoder
 
+import ast
 import yaml
 from colorclass.color import Color
+from dexsim import logs
+from dexsim.plugin import Plugin
 from smafile import SmaliLine, java2smali, smali2java
 from smaliemu.emulator import Emulator
 from timeout3 import TIMEOUT_EXCEPTION
-
-from dexsim import logs
-from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "STEP_BY_STEP"
 
@@ -39,7 +38,7 @@ class STEP_BY_STEP(Plugin):
     name = "STEP_BY_STEP"
     enabled = False
     tname = None
-    index = 4
+    index = 3
     ONE_TIME = False  # 表示该插件只执行一次
 
     def __init__(self, driver, smalidir):

@@ -14,7 +14,7 @@ class PluginManager(object):
         self.smalidir = smalidir
 
         self.plugin_filenames = self.__get_plugin_filenames()
-        self.__plugins = [] 
+        self.__plugins = []
         self.__init__plugins()
 
     def get_plugins(self):
@@ -42,12 +42,11 @@ class PluginManager(object):
                 break
         module_path = os.path.dirname(pkg)[1:].replace(
             os.sep, '.') + '.' + self.plugin_dir + '.'
-        
+
         tmp = [None] * len(self.plugin_filenames)
 
         for name in self.plugin_filenames:
             spec = importlib.util.find_spec(module_path + name)
-
             mod = spec.loader.load_module()
             clazz = getattr(mod, mod.PLUGIN_CLASS_NAME)
             if not issubclass(clazz, Plugin):
@@ -57,7 +56,7 @@ class PluginManager(object):
                 print("Don't load plugin", clazz.name)
                 continue
             tmp[clazz.index] = clazz(self.driver, self.smalidir)
-        
+
         for item in tmp:
             if item:
                 self.__plugins.append(item)

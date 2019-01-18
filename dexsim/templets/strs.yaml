@@ -73,4 +73,4 @@
       - const\/\d+ (.*?), (.*?)\s*
       - const\/\d+ (.*?), (.*?)\s*
       - invoke-static(?:\/range|)? \{(.*?)\}, (.*?);->(.*?)\(Ljava/lang/String;CCC\)Ljava/lang/String;\s*
-      - move-result-object (v\d+) 
+      - move-result-object (v\d+)
