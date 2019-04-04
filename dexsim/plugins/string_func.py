@@ -1,9 +1,8 @@
 import re
 
+from dexsim.plugin import Plugin
 from smafile import SmaliLine
 from timeout3 import TIMEOUT_EXCEPTION, timeout
-
-from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "STRING_FUNC"
 

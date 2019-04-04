@@ -1,8 +1,8 @@
 from smafile import SmaliDir
 
-from . import FILTERS
-from .driver import DSS_APK_PATH
-from .plugin_manager import PluginManager
+from dexsim import FILTERS
+from dexsim.driver import DSS_APK_PATH
+from dexsim.plugin_manager import PluginManager
 
 
 class Oracle:

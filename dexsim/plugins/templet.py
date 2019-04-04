@@ -1,12 +1,10 @@
-import logging
 import os
 import re
 
 import yaml
-from smaliemu.emulator import Emulator
-
-from dexsim import logs
+from dexsim import DEBUG_MODE
 from dexsim.plugin import Plugin
+from smaliemu.emulator import Emulator
 
 PLUGIN_CLASS_NAME = "TEMPLET"
 
@@ -50,7 +48,7 @@ class TEMPLET(Plugin):
                     if not value['enabled']:
                         continue
 
-                    if logs.isdebuggable:
+                    if DEBUG_MODE:
                         print('Load ' + self.tname)
                     if value['protos']:
                         protos = [i.replace('\\', '')

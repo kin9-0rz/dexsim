@@ -1,16 +1,15 @@
-import ast
-import logging
+# import logging
 import os
-import re
+# import re
 import tempfile
 from json import JSONEncoder
 
-import yaml
-from smafile import smali2java
-from smaliemu.emulator import Emulator
-
-from dexsim import logs
+import ast
+# import yaml
+from dexsim import DEBUG_MODE
 from dexsim.plugin import Plugin
+from smafile import smali2java
+# from smaliemu.emulator import Emulator
 
 PLUGIN_CLASS_NAME = "FieldValue"
 
@@ -122,7 +121,7 @@ class FieldValue(Plugin):
         if isinstance(outputs, str):
             return False
 
-        if logs.isdebuggable:
+        if DEBUG_MODE:
             for k, v in outputs.items():
                 print(k, v)
 
