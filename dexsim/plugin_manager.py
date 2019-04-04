@@ -1,8 +1,8 @@
-import importlib
 import os
 import sys
 
-from .plugin import Plugin
+import importlib
+from dexsim.plugin import Plugin
 
 
 class PluginManager(object):

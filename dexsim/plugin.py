@@ -6,15 +6,13 @@
 import hashlib
 import logging
 import os
-import re
 import tempfile
 from abc import abstractmethod
 from json import JSONEncoder
 
+from dexsim import DEBUG_MODE
 from smaliemu.emulator import Emulator
 from timeout3 import timeout
-
-from dexsim import logs
 
 logger = logging.getLogger(__name__)
 
@@ -254,7 +252,7 @@ class Plugin(object):
             return
 
         jsons = JSONEncoder().encode(self.json_list)
-        if logs.isdebuggable:
+        if DEBUG_MODE:
             print("\nJSON内容(解密类、方法、参数)：")
             print(jsons)
 
@@ -264,7 +262,7 @@ class Plugin(object):
         outputs = self.driver.decode(tfile.name)
         os.unlink(tfile.name)
 
-        if logs.isdebuggable:
+        if DEBUG_MODE:
             print("解密结果:")
             print(outputs)
 
@@ -290,7 +288,7 @@ class Plugin(object):
             for item in self.target_contexts[key]:
                 old_body = item[0].get_body()
                 old_content = item[1]
-                if logs.isdebuggable:
+                if DEBUG_MODE:
                     print(item[2], value[0])
                 new_content = item[2].format(value[0])
 
