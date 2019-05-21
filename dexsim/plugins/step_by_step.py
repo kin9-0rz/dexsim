@@ -14,7 +14,8 @@ import ast
 from colorclass.color import Color
 from dexsim import DEBUG_MODE
 from dexsim.plugin import Plugin
-# from smafile import SmaliLine, java2smali, smali2java
+from smafile import SmaliLine
+from smafile import smali2java
 # from smaliemu.emulator import Emulator
 from timeout3 import TIMEOUT_EXCEPTION
 
@@ -29,6 +30,7 @@ android_strs = [
 
 class STEP_BY_STEP(Plugin):
     '''
+    全部执行，太有难度了
     这个插件只能执行一次
 
     它的替换方式，是在原有的代码上直接添加内容。
@@ -38,7 +40,7 @@ class STEP_BY_STEP(Plugin):
     name = "STEP_BY_STEP"
     enabled = False
     tname = None
-    index = 3
+    index = 5
     ONE_TIME = False  # 表示该插件只执行一次
 
     def __init__(self, driver, smalidir):
