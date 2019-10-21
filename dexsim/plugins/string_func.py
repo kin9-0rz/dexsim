@@ -18,7 +18,7 @@ class STRING_FUNC(Plugin):
     String, StringBuilder, StringBuffer等。
     '''
     name = "STRING_FUNC"
-    enabled = True
+    enabled = False
     index = 1
     ONE_TIME = False
 

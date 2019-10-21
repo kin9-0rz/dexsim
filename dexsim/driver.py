@@ -2,7 +2,7 @@ import json
 import os
 import tempfile
 
-from dexsim import DEBUG_MODE
+from dexsim import get_value
 from pyadb3 import ADB
 
 DSS_PATH = '/data/local/dss'
@@ -88,7 +88,7 @@ class Driver:
                 ofile.seek(0)
                 result = json.load(ofile)
 
-        if not DEBUG_MODE:
+        if not get_value('DEBUG_MODE'):
             self.adb.run_shell_cmd(['rm', DSS_OUTPUT_PATH])
             self.adb.run_shell_cmd(['rm', DSS_TARGETS_PATH])
         else:

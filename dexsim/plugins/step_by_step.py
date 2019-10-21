@@ -12,7 +12,7 @@ from json import JSONEncoder
 import ast
 # import yaml
 from colorclass.color import Color
-from dexsim import DEBUG_MODE
+# from dexsim import DEBUG_MODE
 from dexsim.plugin import Plugin
 from smafile import SmaliLine
 from smafile import smali2java
@@ -88,14 +88,14 @@ class STEP_BY_STEP(Plugin):
     def __process(self):
         for sf in self.smalidir:
             for mtd in sf.get_methods():
-                if DEBUG_MODE:
-                    print(mtd)
+                # if DEBUG_MODE:
+                #     print(mtd)
                 # if 'com/android/internal/wrapper/NativeWrapper;->' not in str(mtd):
                 #     continue
                 # if 'eMPGsXR()Ljava/lang/Class;' not in str(mtd):
                 #     continue
-                if DEBUG_MODE:
-                    print(Color.red(mtd))
+                # if DEBUG_MODE:
+                #     print(Color.red(mtd))
                 if self.skip_mtd(mtd):
                     continue
                 self._process_mtd(mtd)
@@ -203,8 +203,8 @@ class STEP_BY_STEP(Plugin):
         }
         self.json_list['data'].append(json_item)
         result = self.get_field_value()
-        if DEBUG_MODE:
-            print('FeildValue:', result)
+        # if DEBUG_MODE:
+        #     print('FeildValue:', result)
         if not result:
             return
         value = result[fname]
@@ -216,10 +216,10 @@ class STEP_BY_STEP(Plugin):
         self.fields[desc] = value
 
     def _process_mtd(self, mtd):
-        if DEBUG_MODE:
-            print('\n', '+' * 100)
-            print('Starting to decode ...')
-            print(Color.green(mtd))
+        # if DEBUG_MODE:
+        #     print('\n', '+' * 100)
+        #     print('Starting to decode ...')
+        #     print(Color.green(mtd))
 
         # 如果存在数组
         array_data_content = []
@@ -250,8 +250,8 @@ class STEP_BY_STEP(Plugin):
                 continue
             new_body.append(line)  # 解密结果，直接放后面即可
 
-            if DEBUG_MODE:
-                print(Color.blue(line))
+            # if DEBUG_MODE:
+            #     print(Color.blue(line))
 
             parts = line.split()
             opcode = parts[0]
@@ -260,11 +260,11 @@ class STEP_BY_STEP(Plugin):
             # 命中下述关键字，则表示当前分支结束
             # 并根据上一个分支的情况，判断之前的分支是否可用
             if 'if-' in opcode:
-                if DEBUG_MODE:
-                    print('>' * 10, opcode)
-                    print('this_block_key', this_block_key)
-                    print('last_block_key', last_block_key)
-                    print('block_args', block_args)
+                # if DEBUG_MODE:
+                #     print('>' * 10, opcode)
+                #     print('this_block_key', this_block_key)
+                #     print('last_block_key', last_block_key)
+                #     print('block_args', block_args)
 
                 # 存在两种情况
                 # 1. 当前代码片段(if语句之前的代码)，还没执行；全部执行一次
@@ -291,8 +291,8 @@ class STEP_BY_STEP(Plugin):
                 this_block_key = 'if' + parts[-1]  # 表示接下来跑的代码块是这个语句的
                 keys.append(this_block_key)
 
-                if DEBUG_MODE:
-                    print('block_args - 运行后', block_args)
+                # if DEBUG_MODE:
+                #     print('block_args - 运行后', block_args)
                 continue
             elif 'goto' in opcode:
                 # 跳转语句，直接跳过
@@ -300,11 +300,11 @@ class STEP_BY_STEP(Plugin):
             elif opcode.startswith(':cond_')\
                 or opcode.startswith(':try_start')\
                     or opcode.startswith('.catch_'):
-                if DEBUG_MODE:
-                    print('>' * 10, opcode)
-                    print('this_block_key', this_block_key)
-                    print('last_block_key', last_block_key)
-                    print('block_args', block_args)
+                # if DEBUG_MODE:
+                #     print('>' * 10, opcode)
+                #     print('this_block_key', this_block_key)
+                #     print('last_block_key', last_block_key)
+                #     print('block_args', block_args)
                 # 存在两种情况
                 # 1. 当前代码片段，还没执行；全部执行一次
                 # 2. 当前代码片段，已经执行了一部分，因为解密；从执行后的地方开始执行
@@ -322,8 +322,8 @@ class STEP_BY_STEP(Plugin):
                 this_block_key = opcode  # 表示接下来跑的代码块是这个语句的
                 keys.append(this_block_key)
 
-                if DEBUG_MODE:
-                    print('block_args - 运行后', block_args)
+                # if DEBUG_MODE:
+                #     print('block_args - 运行后', block_args)
                 continue
             elif opcode.startswith(':try_start'):
                 pass
@@ -384,16 +384,16 @@ class STEP_BY_STEP(Plugin):
             try:
                 snippet = self.process_if_statement(snippet)
 
-                if DEBUG_MODE:
-                    print(Color.red('开始处理解密参数 {}'.format(line)))
-                    for l in snippet:
-                        print(Color.red(l))
+                # if DEBUG_MODE:
+                #     print(Color.red('开始处理解密参数 {}'.format(line)))
+                #     for l in snippet:
+                #         print(Color.red(l))
 
-                    print('args', args)
-                    print(block_args)
-                    print(keys)
-                    print(this_block_key)
-                    print('-' * 80)
+                #     print('args', args)
+                #     print(block_args)
+                #     print(keys)
+                #     print(this_block_key)
+                #     print('-' * 80)
 
                 pre_args = block_args[last_block_key].copy()
                 args.update(pre_args)
@@ -405,10 +405,10 @@ class STEP_BY_STEP(Plugin):
                 registers = self.emu.vm.variables
                 block_args[this_block_key] = registers
 
-                if DEBUG_MODE:
-                    print(snippet)
-                    print('args:', args)
-                    print('smali执行后，寄存器内容', registers)
+                # if DEBUG_MODE:
+                #     print(snippet)
+                #     print('args:', args)
+                #     print('smali执行后，寄存器内容', registers)
 
                 if registers:
                     for k, v in registers.items():
@@ -453,10 +453,10 @@ class STEP_BY_STEP(Plugin):
             else:
                 arguments.append('Object:' + smali2java(ptypes[0]))
 
-            if DEBUG_MODE:
-                print(Color.red('->>'))
-                print('参数类型', ptypes)
-                print('参数值', arguments)
+            # if DEBUG_MODE:
+            #     print(Color.red('->>'))
+            #     print('参数类型', ptypes)
+            #     print('参数值', arguments)
             if len(arguments) != len(ptypes):
                 print(Color.red('->> 参数对不上'))
                 continue
@@ -486,8 +486,8 @@ class STEP_BY_STEP(Plugin):
                                   rtn_name)
 
             result = self.get_result(rtype)
-            if DEBUG_MODE:
-                print("解密结果", result)
+            # if DEBUG_MODE:
+            #     print("解密结果", result)
 
             self.json_list.clear()
 
@@ -518,9 +518,9 @@ class STEP_BY_STEP(Plugin):
                 block_args[this_block_key].update(args)
 
             # 把结果保存到当前分支
-            if DEBUG_MODE:
-                print(block_args)
-                print('*' * 100)
+            # if DEBUG_MODE:
+            #     print(block_args)
+            #     print('*' * 100)
             #     print('last_block_key', last_block_key)
             #     print('this_block_key', this_block_key)
             #

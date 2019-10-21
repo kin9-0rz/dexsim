@@ -3,6 +3,7 @@ import sys
 
 import importlib
 from dexsim.plugin import Plugin
+from dexsim import get_value
 
 
 class PluginManager(object):
@@ -15,7 +16,11 @@ class PluginManager(object):
 
         self.plugin_filenames = self.__get_plugin_filenames()
         self.__plugins = []
-        self.__init__plugins()
+        pname = get_value("PLUGIN_NAME")
+        if pname:
+            self.__init_plugin(pname)
+        else:
+            self.__init__plugins()
 
     def get_plugins(self):
         return self.__plugins
@@ -34,6 +39,26 @@ class PluginManager(object):
                 names.append(filename[:-3])
         names.sort()
         return names
+
+    def __init_plugin(self, pname):
+        for path in sys.path:
+            if path and path in __file__:
+                pkg = __file__.replace(path, '')
+                break
+        module_path = os.path.dirname(pkg)[1:].replace(
+            os.sep, '.') + '.' + self.plugin_dir + '.'
+
+        tmp = [None] * len(self.plugin_filenames)
+
+        spec = importlib.util.find_spec(module_path + pname)
+        mod = spec.loader.load_module()
+        clazz = getattr(mod, mod.PLUGIN_CLASS_NAME)
+
+        tmp[clazz.index] = clazz(self.driver, self.smalidir)
+
+        for item in tmp:
+            if item:
+                self.__plugins.append(item)
 
     def __init__plugins(self):
         for path in sys.path:

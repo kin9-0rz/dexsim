@@ -6,7 +6,7 @@ from json import JSONEncoder
 
 import ast
 # import yaml
-from dexsim import DEBUG_MODE
+# from dexsim import DEBUG_MODE
 from dexsim.plugin import Plugin
 from smafile import smali2java
 # from smaliemu.emulator import Emulator
@@ -22,7 +22,7 @@ class FieldValue(Plugin):
     这个插件只需要执行一次
     """
     name = "FieldValue"
-    enabled = True
+    enabled = False
     tname = None
     index = 0
 
@@ -121,9 +121,9 @@ class FieldValue(Plugin):
         if isinstance(outputs, str):
             return False
 
-        if DEBUG_MODE:
-            for k, v in outputs.items():
-                print(k, v)
+        # if DEBUG_MODE:
+        #     for k, v in outputs.items():
+        #         print(k, v)
 
         for sf in self.smalidir:
             clz = smali2java(sf.get_class())

@@ -8,9 +8,10 @@ import time
 import zipfile
 
 from cigam import Magic
-from dexsim import DEBUG_MODE
+from dexsim import get_value, set_value
 from dexsim.driver import Driver
 from dexsim.oracle import Oracle
+
 
 main_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 JAVA = 'java'
@@ -79,13 +80,16 @@ def dexsim_apk(apk_file, smali_dir, includes, output_dex):
         smali(smali_dir,
               os.path.splitext(os.path.basename(apk_file))[0] + '.sim.dex')
 
-    if not DEBUG_MODE:
+    if not get_value('DEBUG_MODE'):
         shutil.rmtree(smali_dir)
 
 
 def main(args):
-    global DEBUG_MODE
-    DEBUG_MODE = args.debug
+    if args.debug:
+        set_value("DEBUG_MODE", args.pname)
+    if args.pname:
+        set_value("PLUGIN_NAME", args.pname)
+
     includes = args.includes
 
     output_dex = None
@@ -98,7 +102,7 @@ def main(args):
         return
 
     smali_dir = None
-    if DEBUG_MODE:
+    if get_value('DEBUG_MODE'):
         smali_dir = os.path.join(os.path.abspath(os.curdir), 'zzz')
     else:
         smali_dir = tempfile.mkdtemp()
@@ -107,7 +111,7 @@ def main(args):
     if Magic(args.f).get_type() == 'apk':
         apk_path = args.f
 
-        if DEBUG_MODE:
+        if get_value('DEBUG_MODE'):
             tempdir = os.path.join(os.path.abspath(os.curdir), 'tmp_dir')
             if not os.path.exists(tempdir):
                 os.mkdir(tempdir)
@@ -127,7 +131,7 @@ def main(args):
 
         smali(smali_dir, dex_file)
         dexsim_apk(args.f, smali_dir, includes, output_dex)
-        if not DEBUG_MODE:
+        if not get_value('DEBUG_MODE'):
             shutil.rmtree(tempdir)
 
     else:
@@ -142,6 +146,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', help='output file path')
     parser.add_argument('-d', '--debug', action='store_true', help='开启调试模式')
     parser.add_argument('-s', required=False, help='指定smali目录')
+    parser.add_argument('-p', '--pname', required=False, help='加载指定插件，根据插件名字')
     # TODO parser.add_argument('-b', action='store_true', help='开启STEP_BY_STEP插件')
 
     args = parser.parse_args()
