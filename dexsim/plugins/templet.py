@@ -2,7 +2,7 @@ import os
 import re
 
 import yaml
-from dexsim import DEBUG_MODE
+from dexsim import get_value
 from dexsim.plugin import Plugin
 from smaliemu.emulator import Emulator
 
@@ -17,7 +17,7 @@ class TEMPLET(Plugin):
     模板包含：参数、解密方法、返回值处理
     """
     name = "TEMPLET"
-    enabled = True
+    enabled = False
     tname = None
     index = 2
 
@@ -48,7 +48,7 @@ class TEMPLET(Plugin):
                     if not value['enabled']:
                         continue
 
-                    if DEBUG_MODE:
+                    if get_value('DEBUG_MODE'):
                         print('Load ' + self.tname)
                     if value['protos']:
                         protos = [i.replace('\\', '')

@@ -9,7 +9,7 @@ import tempfile
 from abc import abstractmethod
 from json import JSONEncoder
 
-from dexsim import DEBUG_MODE
+from dexsim import get_value
 from smaliemu.emulator import Emulator
 from timeout3 import timeout
 
@@ -42,7 +42,7 @@ class Plugin(object):
     ARRAY_DATA_PATTERN = r':array_[\w\d]+\s*.array-data[\w\W\s]+.end array-data'
 
     # [{'className':'', 'methodName':'', 'arguments':'', 'id':''}, ..., ]
-    json_list = []
+    json_list = []  # 存放解密对象
     # [(mtd, old_content, new_content), ..., ]
     target_contexts = {}
     #
@@ -91,7 +91,7 @@ class Plugin(object):
                 field = self.smalidir.get_field(field_desc)
                 if not field:
                     continue
-            except TypeError as ex:
+            except TypeError:
                 continue
 
             value = field.get_value()
@@ -221,7 +221,7 @@ class Plugin(object):
         json list 存放了所有的json格式解密对象。
 
         Args:
-            json_item (dict): 解密对象
+            json_item (dict): 解密对象，推送到Android或模拟器
             mtd (SmaliMethod): 解密对象所在的方法
             old_content (str): 要替换的内容
             rtn_name (str): 返回值寄存器的名字，用于存放解密结果。
@@ -261,7 +261,7 @@ class Plugin(object):
             return
 
         jsons = JSONEncoder().encode(self.json_list)
-        if DEBUG_MODE:
+        if get_value('DEBUG_MODE'):
             print("\nJSON内容(解密类、方法、参数)：")
             print(jsons)
 
@@ -271,7 +271,7 @@ class Plugin(object):
         outputs = self.driver.decode(tfile.name)
         os.unlink(tfile.name)
 
-        if DEBUG_MODE:
+        if get_value('DEBUG_MODE'):
             print("解密结果:")
             print(outputs)
 
@@ -296,7 +296,7 @@ class Plugin(object):
             for item in self.target_contexts[key]:
                 old_body = item[0].get_body()
                 old_content = item[1]
-                if DEBUG_MODE:
+                if get_value('DEBUG_MODE'):
                     print(item[2], value[0])
                 new_content = item[2].format(value[0])
 

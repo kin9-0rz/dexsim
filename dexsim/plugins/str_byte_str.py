@@ -26,7 +26,7 @@ PLUGIN_CLASS_NAME = "STR_BYTE_STR"
 
 class STR_BYTE_STR(Plugin):
     name = PLUGIN_CLASS_NAME
-    enabled = True
+    enabled = False
     tname = None
     index = 3
 
