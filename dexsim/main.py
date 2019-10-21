@@ -86,7 +86,7 @@ def dexsim_apk(apk_file, smali_dir, includes, output_dex):
 
 def main(args):
     if args.debug:
-        set_value("DEBUG_MODE", args.pname)
+        set_value("DEBUG_MODE", args.debug)
     if args.pname:
         set_value("PLUGIN_NAME", args.pname)
 
@@ -106,7 +106,7 @@ def main(args):
         smali_dir = os.path.join(os.path.abspath(os.curdir), 'zzz')
     else:
         smali_dir = tempfile.mkdtemp()
-
+    
     dex_file = None
     if Magic(args.f).get_type() == 'apk':
         apk_path = args.f
