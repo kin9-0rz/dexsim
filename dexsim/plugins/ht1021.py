@@ -46,7 +46,6 @@ class ht1021(Plugin):
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
-        self.results = {}   # 存放解密结果
 
     def run(self):
         if self.ONE_TIME:
@@ -82,7 +81,7 @@ class ht1021(Plugin):
             for mtd in sf.get_methods():
                 self._process_mtd(mtd, ptn)
 
-        self.optimize()
+        self.decode()
 
     def _process_mtd(self, mtd, ptn):
         if get_value('DEBUG_MODE'):
@@ -97,22 +96,9 @@ class ht1021(Plugin):
             arg, cname, mname, rtn_name = item.groups()
             arguments = ['java.lang.String:' + arg]
             json_item = self.get_json_item(cname, mname, arguments)
-            mid = json_item['id']
             self.append_json_item(json_item, mtd, old_content, rtn_name)
-            if mid in self.results:
-                self.json_list.clear()
-                continue
-            self.decode(mid)
 
-    def decode(self, mid):
-        """解密，并且存放解密结果
-
-        Args:
-            mid (str): 指定的解密内容ID
-
-        Returns:
-            None
-        """
+    def decode(self):
         if not self.json_list or not self.target_contexts:
             return
 
@@ -126,17 +112,13 @@ class ht1021(Plugin):
 
         if not outputs:
             return
-        self.results[mid] = outputs[mid][0]
-        print(outputs)
-        self.json_list.clear()
 
-    def optimize(self):
-        """替换解密结果，优化smali代码
-        """
-        for key, value in self.results.items():
+        for key, value in outputs.items():
+            print(key, value)
+           
             for mtd, old_content, new_content in self.target_contexts[key]:
                 old_body = mtd.get_body()
-                new_content = new_content.format(value)
+                new_content = new_content.format(value[0])
                 mtd.set_body(old_body.replace(old_content, new_content))
                 self.make_changes = True
 
