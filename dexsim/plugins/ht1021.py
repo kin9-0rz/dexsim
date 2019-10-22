@@ -38,9 +38,10 @@ PLUGIN_CLASS_NAME = "ht1021"
 # move-result-object v0
 # check-cast v0, Ljava/lang/String;
 
+
 class ht1021(Plugin):
     name = PLUGIN_CLASS_NAME
-    enabled = True
+    enabled = False
     tname = None
     index = 3
 
@@ -114,12 +115,15 @@ class ht1021(Plugin):
             return
 
         for key, value in outputs.items():
-            print(key, value)
-           
+            if key not in self.target_contexts:
+                print(key, value, "not in")
+                continue
             for mtd, old_content, new_content in self.target_contexts[key]:
                 old_body = mtd.get_body()
-                new_content = new_content.format(value[0])
-                mtd.set_body(old_body.replace(old_content, new_content))
+                new_content = old_content + "\n" + new_content.format(value[0])
+                body = old_body.replace(old_content, new_content)
+                mtd.set_body(body)
                 self.make_changes = True
+              
 
         self.smali_files_update()
