@@ -17,7 +17,7 @@ class TEMPLET(Plugin):
     模板包含：参数、解密方法、返回值处理
     """
     name = "TEMPLET"
-    enabled = False
+    enabled = True
     tname = None
     index = 2
 
