@@ -1,0 +1,11 @@
+{
+  "name": "dexsim",
+  "owner": "mikusjelly",
+  "repository": "https://github.com/mikusjelly/dexsim",
+  "standard-version": {
+    "skip": {
+      "tag": true
+    }
+  },
+  "version": "2.1.1"
+}
