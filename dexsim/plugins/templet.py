@@ -1,6 +1,8 @@
+import hashlib
 import logging
 import os
 import re
+from json import JSONEncoder
 
 import yaml
 from smaliemu.emulator import Emulator
@@ -25,6 +27,7 @@ class TEMPLET(Plugin):
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
+        # self.results = {}  # 缓存解密结果
         self.emu2 = Emulator()
         self.templets = []
         if not self.templets:
@@ -61,6 +64,8 @@ class TEMPLET(Plugin):
                     ptn = ''.join(value['pattern'])
 
                     self.__process(protos, ptn)
+        
+        self.optimize()
 
     def __process(self, protos, pattern):
         prog = re.compile(pattern)
@@ -88,24 +93,51 @@ class TEMPLET(Plugin):
                     snippet.extend(array_data_content)
                     self.emu.call(snippet, thrown=False)
 
+                    arguments = []
+                    argumentTypes = []
+
                     if protos:
                         # rnames 存放寄存器名
                         rnames = self.get_arguments_name(
                             old_content, groups[-4])
-                        arguments = self.gen_arguments(
+                        result = self.gen_arguments(
                             protos, rnames, self.emu.vm.variables)
-                        if not arguments:
+                        # print('>>>', result)
+                        if not result:
                             continue
+                        arguments = result[0]
+                        argumentTypes = result[1]
                     else:
                         arguments = []  # 无参
+                    # print(cls_name, mtd_name, arguments, argumentTypes)
+                    data = {
+                        'className': cls_name,
+                        'methodName': mtd_name,
+                        'arguments': arguments,
+                        # TODO
+                        # 建议内置固定的类型
+                        # INT FLOAT STRING INT_ARRAY BYTE_ARRAY
+                        #
+                        'argumentTypes': argumentTypes,
+                    }
 
-                    json_item = self.get_json_item(
-                        cls_name, mtd_name, arguments)
+                    data_id = hashlib.sha256(JSONEncoder().encode(
+                        data).encode('utf-8')).hexdigest()
 
-                    self.append_json_item(
-                        json_item, mtd, old_content, rtn_name)
+                    if data_id in self.results:
+                        # print('{} 已解密 {}'.format(data_id, self.results.get(data_id)))
+                        self.append_context(data_id, mtd, old_content, rtn_name)
+                        continue
 
-        self.optimize()
+                    # 单次解密非常快
+                    # 直接哈希化，保存结果。
+                    result = self.driver.rpc_static_method(data)
+                    print(result)
+                    self.results[data_id] = result
+                    # print('{} 解密为 {}'.format(data_id, result))
+
+                    self.append_context(data_id, mtd, old_content, rtn_name)
+
 
     @staticmethod
     def get_arguments_name(line, result):
@@ -143,8 +175,9 @@ class TEMPLET(Plugin):
         "arguments": ["I:198", "I:115", "I:26"]
         '''
         arguments = []
+        argumentTypes = []
         if rnames is None:
-            return arguments
+            return (arguments, argumentTypes)
 
         ridx = -1
         for item in protos:
@@ -153,10 +186,16 @@ class TEMPLET(Plugin):
             if rname not in registers:
                 break
             value = registers[rnames[ridx]]
-            argument = self.convert_args(item, value)
-            if argument is None:
-                break
+            result = self.convert_args(item, value)
+            # print("?????", item, result)
+            if result is None:
+                # 说明类型不支持
+                return ([], [])
+            argumentType, argument = result.split(':')
+            # print(argument, argumentType)
             arguments.append(argument)
+            argumentTypes.append(argumentType)
 
         if len(arguments) == len(protos):
-            return arguments
+            return (arguments, argumentTypes)
+

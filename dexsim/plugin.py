@@ -58,12 +58,14 @@ class Plugin(object):
     fields = {}
 
     def __init__(self, driver, smalidir, mfilters=None):
-        self.make_changes = False
+        self.make_changes = False # 标记插件，是否优化过smali代码。
         self.driver = driver
         self.smalidir = smalidir
         # method filters
         self.mfilters = mfilters
         # self.smali_files = smali_files
+        self.results = {} # 存放解密结果
+        self.contexts = {} # 存放解密上下文，待解密待方法、片段等。
 
         self.emu = Emulator()
         self.emu2 = Emulator()
@@ -237,6 +239,20 @@ class Plugin(object):
         if json_item not in self.json_list:
             self.json_list.append(json_item)
 
+    def append_context(self, data_id, mtd, old_content, rtn_name):
+        if rtn_name:
+            new_content = 'const-string ' + rtn_name + ', "{}"\n'
+        else:
+            new_content = ('const-string v0, "Dexsim"\n'
+                           'const-string v1, "{}"\n'
+                           'invoke-static {{v0, v1}}, Landroid/util/Log;->d'
+                           '(Ljava/lang/String;Ljava/lang/String;)I\n')
+
+        if data_id not in self.contexts:
+            self.contexts[data_id] = [(mtd, old_content, new_content)]
+        else:
+            self.contexts[data_id].append((mtd, old_content, new_content))
+
     @abstractmethod
     def run(self):
         """
@@ -244,8 +260,22 @@ class Plugin(object):
         插件必须实现该方法
         """
         pass
-
+    
     def optimize(self):
+        """优化smali代码，替换解密结果
+        """  
+        for key, value in self.results.items():
+            for mtd, old_content, new_content in self.contexts[key]:
+                old_body = mtd.get_body()
+                new_content = new_content.format(value)
+                mtd.set_body(old_body.replace(old_content, new_content))
+                mtd.set_modified(True)
+                self.make_changes = True
+
+        self.smali_files_update()
+        self.clear()
+
+    def optimize_old(self):
         """
         smali 通用优化代码
         一般情况下，可以使用这个，插件也可以实现自己的优化方式。
@@ -293,7 +323,6 @@ class Plugin(object):
                 if logs.isdebuggable:
                     print(item[2], value[0])
                 new_content = item[2].format(value[0])
-
                 item[0].set_body(old_body.replace(old_content, new_content))
                 item[0].set_modified(True)
                 self.make_changes = True
@@ -308,8 +337,10 @@ class Plugin(object):
             None
 
         """
-        self.json_list.clear()
-        self.target_contexts.clear()
+        # self.json_list.clear()
+        # self.target_contexts.clear()
+        self.results.clear()
+        self.contexts.clear()
 
     def smali_files_update(self):
         """更新Smali文件

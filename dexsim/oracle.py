@@ -1,7 +1,6 @@
 from smafile import SmaliDir
 
 from . import FILTERS
-from .driver import DSS_APK_PATH
 from .plugin_manager import PluginManager
 
 
@@ -34,8 +33,6 @@ class Oracle:
             for plugin in plugins:
                 plugin.run()
                 smali_mtds = smali_mtds.union(plugin.smali_mtd_updated_set)
-                print(plugin.make_changes)
+                print("是否解密：", plugin.make_changes)
                 flag = flag | plugin.make_changes
                 plugin.make_changes = False
-
-        self.driver.adb.run_shell_cmd(['rm', DSS_APK_PATH])

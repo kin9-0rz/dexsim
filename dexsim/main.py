@@ -19,6 +19,10 @@ JAVA = 'java'
 with open(os.path.join(main_path, 'datas', 'filters.txt')) as f:
     lines = f.read().splitlines()
 
+from pyadb3 import ADB
+
+adb = ADB()
+PLUGIN_PATH = '/data/local/tmp/plugins/test.apk'
 
 def clean(smali_dir):
     for line in lines:
@@ -28,13 +32,23 @@ def clean(smali_dir):
             shutil.rmtree(xpath)
 
 
-def dexsim(dex_file, smali_dir, includes):
-    driver = Driver()
-    driver.push_to_dss(dex_file)
+def push_apk_to_device(apk_path):
+    adb.run_cmd(['push', apk_path, PLUGIN_PATH])
+    adb.run_shell_cmd(['am', 'start', '-n', 'mikusjelly.zerolib/mikusjelly.zero.MainActivity'])
+    adb.run_cmd(['forward', 'tcp:8888', 'tcp:9999'])
+def rm_device_file():
+    # 停止进程
+    adb.run_shell_cmd(['am', 'force-stop', 'mikusjelly.zerolib']) #停止进程
+    adb.run_shell_cmd(['rm', PLUGIN_PATH])
 
+def dexsim(dex_file, smali_dir, includes):
+    push_apk_to_device(dex_file)
+
+    driver = Driver()
     oracle = Oracle(smali_dir, driver, includes)
     oracle.divine()
 
+    # rm_device_file()
 
 def baksmali(dex_file, output_dir='out'):
     '''
@@ -50,9 +64,15 @@ def baksmali(dex_file, output_dir='out'):
 
 
 def smali(smali_dir, output_file='out.dex'):
-    '''
-    smali to dex
-    '''
+    """smali to dex
+
+    Args:
+        smali_dir (str): smali fold
+        output_file (str, optional): output filename
+
+    Returns:
+        [type]: [description]
+    """    
     smali_path = os.path.join(main_path, 'smali', 'smali.jar')
     cmd = '{} -jar {} a {} -o {}'.format(JAVA,
                                          smali_path, smali_dir, output_file)
@@ -128,6 +148,18 @@ def dexsim_dex(dex_file, smali_dir, includes, output_dex):
     if not logs.isdebuggable:
         shutil.rmtree(smali_dir)
 
+# TODO
+# push apk 到指定目录
+# 将apk转为smali代码
+# 根据解密插件，生成RPC调用数据
+# 推送数据，获取结果
+# 替换代码
+# 通过python3 setup安装
+# 使用默认插件解密。（指定特定的插件名解密 methdo(I)LObject/lang/String;）
+# 可以手工指定解密的插件。
+# 自动模式
+# 将自动加载目录下所有的插件
+# 指定特定的插件
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='dexsim', description='')
