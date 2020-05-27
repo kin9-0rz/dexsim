@@ -4,7 +4,7 @@
 # ('v1', 'v2', 'v5', 'Lcom/skt/pig/UserInterface', 'a', 'III')
 # 利用正则，自动分割所有的proto
 
--  I:
+-  (I)Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:
@@ -14,7 +14,7 @@
       - invoke-static \{(.*?)\}, (.*?);->(.*?)\(I\)Ljava/lang/String;\s*
       - move-result-object (.*?)\s
 
--  II:
+-  (II)Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:
@@ -26,7 +26,7 @@
       - invoke-static \{(.*?)\}, (.*?);->(.*?)\(II\)Ljava/lang/String;\s*
       - move-result-object (.*?)\s
 
--  III:
+-  (III)Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:

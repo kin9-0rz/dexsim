@@ -1,4 +1,4 @@
--  Barr:
+-  ([B)Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:
@@ -8,7 +8,7 @@
       - fill-array-data [vp]\d+, :array_[\w\d]+\s*
       - invoke-static \{(.*?)}, (.*?);->(.*?)\(\[B\)Ljava/lang/String;\s*
       - move-result-object (.*?)\s
--  Carr:
+-  ([C)Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:
@@ -18,7 +18,7 @@
       - fill-array-data [vp]\d+, :array_[\w\d]+\s*
       - invoke-static \{(.*?)}, (.*?);->(.*?)\(\[C\)Ljava/lang/String;\s*
       - move-result-object (.*?)\s
--  Iarr:
+-  ([I)Ljava/lang/String;:
     enabled: 0
     type: 1
     protos:

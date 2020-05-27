@@ -1,19 +1,11 @@
--  SO:
-    enabled: 1
-    type: 1
-    protos:
-      - Object
-    pattern:
-      - invoke-static \{(.*?)\}, (.*?);->(.*?)\((.*?)\)Ljava/lang/String;\s*
-      - move-result-object (.*?)\s
--  S0:
+-  ()Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:
     pattern:
       - invoke-static \{\}, (.*?);->(.*?)\(\)Ljava/lang/String;\s*
       - move-result-object (.*?)\s
--  S:
+-  (Ljava/lang/String;)Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:
@@ -22,7 +14,7 @@
       - const-string .*?, ".*?"\s*
       - invoke-static(?:\/range|) \{(.*?)\}, (.*?);->(.*?)\(Ljava/lang/String;\)Ljava/lang/String;\s*
       - move-result-object (.*?)\s
--  SS:
+-  (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:
@@ -33,7 +25,7 @@
       - const-string .*?, ".*?"\s*
       - invoke-static(?:\/range|) \{(.*?)\}, (.*?);->(.*?)\(Ljava/lang/String;Ljava/lang/String;\)Ljava/lang/String;\s*
       - move-result-object (.*?)\s
--  SSS:
+-  (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:
@@ -46,7 +38,7 @@
       - const-string .*?, ".*?"\s*
       - invoke-static(?:\/range|) \{(.*?)\}, (.*?);->(.*?)\(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\)Ljava/lang/String;\s*
       - move-result-object (.*?)\s
--  SCC:
+-  (Ljava/lang/String;CC)Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:
@@ -59,7 +51,7 @@
       - const\/\d+ (.*?), (.*?)\s*
       - invoke-static(?:\/range|) \{(.*?)\}, (.*?);->(.*?)\(Ljava/lang/String;CC\)Ljava/lang/String;\s*
       - move-result-object (v\d+)
--  SCCC:
+-  (Ljava/lang/String;CCC)Ljava/lang/String;:
     enabled: 1
     type: 1
     protos:

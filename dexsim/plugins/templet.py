@@ -7,7 +7,7 @@ from json import JSONEncoder
 import yaml
 from smaliemu.emulator import Emulator
 
-from dexsim import logs
+from dexsim import var
 from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "TEMPLET"
@@ -19,6 +19,7 @@ class TEMPLET(Plugin):
 
     利用模板快速解密常见的解密方法
     模板包含：参数、解密方法、返回值处理
+    解密常见的静态解密方法。
     """
     name = "TEMPLET"
     enabled = True
@@ -27,21 +28,24 @@ class TEMPLET(Plugin):
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
-        # self.results = {}  # 缓存解密结果
         self.emu2 = Emulator()
         self.templets = []
         if not self.templets:
             self._init_templets()
 
     def _init_templets(self):
+        """初始化解密模版
+        """        
         templets_path = os.path.dirname(__file__)[:-7] + 'templets'
         for filename in os.listdir(templets_path):
             file_path = os.path.join(templets_path, filename)
             with open(file_path, encoding='utf-8') as f:
-                self.templets.append(yaml.load(f.read()))
+                self.templets.append(
+                    yaml.load(f.read(), Loader=yaml.SafeLoader))
 
     def run(self):
-        print('Run ' + __name__, end=' ', flush=True)
+        print('运行插件' + __name__)
+
         for templet in self.templets:
             for item in templet:
                 for key, value in item.items():
@@ -53,8 +57,9 @@ class TEMPLET(Plugin):
                     if not value['enabled']:
                         continue
 
-                    if logs.isdebuggable:
-                        print('Load ' + self.tname)
+                    if var.is_debug:
+                        logging.info('加载模版 ' + self.tname)
+
                     if value['protos']:
                         protos = [i.replace('\\', '')
                                   for i in value['protos']]
@@ -64,7 +69,7 @@ class TEMPLET(Plugin):
                     ptn = ''.join(value['pattern'])
 
                     self.__process(protos, ptn)
-        
+
         self.optimize()
 
     def __process(self, protos, pattern):
@@ -88,6 +93,9 @@ class TEMPLET(Plugin):
                     mtd_name = groups[-2]
                     rtn_name = groups[-1]
 
+                    if cls_name in ['java.lang.String']:
+                        continue
+
                     # 由于参数的个数不一致，所以，不好直接获取，直接通过简单运算获取
                     snippet = re.split(r'\n\s', old_content)[:-2]
                     snippet.extend(array_data_content)
@@ -102,42 +110,40 @@ class TEMPLET(Plugin):
                             old_content, groups[-4])
                         result = self.gen_arguments(
                             protos, rnames, self.emu.vm.variables)
-                        # print('>>>', result)
                         if not result:
                             continue
                         arguments = result[0]
                         argumentTypes = result[1]
                     else:
                         arguments = []  # 无参
-                    # print(cls_name, mtd_name, arguments, argumentTypes)
+
                     data = {
                         'className': cls_name,
                         'methodName': mtd_name,
                         'arguments': arguments,
-                        # TODO
-                        # 建议内置固定的类型
-                        # INT FLOAT STRING INT_ARRAY BYTE_ARRAY
-                        #
                         'argumentTypes': argumentTypes,
                     }
 
                     data_id = hashlib.sha256(JSONEncoder().encode(
                         data).encode('utf-8')).hexdigest()
 
-                    if data_id in self.results:
-                        # print('{} 已解密 {}'.format(data_id, self.results.get(data_id)))
-                        self.append_context(data_id, mtd, old_content, rtn_name)
+                    if self.results.get(data_id) == '解密失败':
                         continue
 
-                    # 单次解密非常快
-                    # 直接哈希化，保存结果。
+                    if data_id in self.results:
+                        self.append_context(
+                            data_id, mtd, old_content, rtn_name)
+                        continue
+
                     result = self.driver.rpc_static_method(data)
-                    print(result)
+
+                    if not result:
+                        self.results[data_id] = '解密失败'
+                        continue
+
+                    logging.info('解密结果: ' + result)
                     self.results[data_id] = result
-                    # print('{} 解密为 {}'.format(data_id, result))
-
                     self.append_context(data_id, mtd, old_content, rtn_name)
-
 
     @staticmethod
     def get_arguments_name(line, result):
@@ -170,10 +176,16 @@ class TEMPLET(Plugin):
         return args_names
 
     def gen_arguments(self, protos, rnames, registers):
-        '''
-        生成解密函数的参数列表，传给DSS，格式为：
-        "arguments": ["I:198", "I:115", "I:26"]
-        '''
+        """获取参数列表和参数类型列表
+
+        Args:
+            protos ([type]): protos
+            rnames ([type]): 寄存器名，如v1，v2
+            registers ([type]): 存放所有的寄存器的字典
+
+        Returns:
+            [type]: 参数列表、参数类型列表
+        """        
         arguments = []
         argumentTypes = []
         if rnames is None:
@@ -187,7 +199,6 @@ class TEMPLET(Plugin):
                 break
             value = registers[rnames[ridx]]
             result = self.convert_args(item, value)
-            # print("?????", item, result)
             if result is None:
                 # 说明类型不支持
                 return ([], [])
@@ -198,4 +209,3 @@ class TEMPLET(Plugin):
 
         if len(arguments) == len(protos):
             return (arguments, argumentTypes)
-

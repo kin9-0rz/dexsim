@@ -263,8 +263,11 @@ class Plugin(object):
     
     def optimize(self):
         """优化smali代码，替换解密结果
-        """  
+        """
+        print("优化代码：", end='') 
         for key, value in self.results.items():
+            if key not in self.contexts:
+                continue
             for mtd, old_content, new_content in self.contexts[key]:
                 old_body = mtd.get_body()
                 new_content = new_content.format(value)
