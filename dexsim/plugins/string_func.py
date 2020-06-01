@@ -18,8 +18,8 @@ class STRING_FUNC(Plugin):
 
     String, StringBuilder, StringBuffer等。
     '''
-    name = "STRING_FUNC"
-    enabled = False 
+    name = PLUGIN_CLASS_NAME
+    enabled = False
     index = 1
     ONE_TIME = False
 
@@ -62,8 +62,8 @@ class STRING_FUNC(Plugin):
     def run(self):
         if self.ONE_TIME:
             return
-        print('Run ' + __name__, end=' ', flush=True)
-        self.processes()
+        print('运行插件: {}'.format(PLUGIN_CLASS_NAME))
+        self.decode_smalidir()
         self.ONE_TIME = True
 
     @staticmethod
@@ -74,7 +74,7 @@ class STRING_FUNC(Plugin):
         mset = set(['<clinit>', '<init>'])
         return mtd_name in mset
 
-    def processes(self):
+    def decode_smalidir(self):
 
         for sf in self.smalidir:
             for mtd in sf.get_methods():
@@ -89,7 +89,7 @@ class STRING_FUNC(Plugin):
                     continue
 
                 try:
-                    flag, new_body = self.process_body(body)
+                    flag, new_body = self.decode_body(body)
                 except TIMEOUT_EXCEPTION:
                     continue
 
@@ -103,7 +103,7 @@ class STRING_FUNC(Plugin):
         self.smali_files_update()
 
     @timeout(1)
-    def process_body(self, body):
+    def decode_body(self, body):
         '''
         返回(结果、新的方法体)
         '''

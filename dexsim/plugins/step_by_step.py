@@ -16,7 +16,7 @@ from smafile import SmaliLine, java2smali, smali2java
 from smaliemu.emulator import Emulator
 from timeout3 import TIMEOUT_EXCEPTION
 
-from dexsim import logs
+from dexsim import var
 from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "STEP_BY_STEP"
@@ -87,13 +87,13 @@ class STEP_BY_STEP(Plugin):
     def __process(self):
         for sf in self.smalidir:
             for mtd in sf.get_methods():
-                if logs.isdebuggable:
+                if var:
                     print(mtd)
                 # if 'com/android/internal/wrapper/NativeWrapper;->' not in str(mtd):
                 #     continue
                 # if 'eMPGsXR()Ljava/lang/Class;' not in str(mtd):
                 #     continue
-                if logs.isdebuggable:
+                if var.is_debug:
                     print(Color.red(mtd))
                 if self.skip_mtd(mtd):
                     continue
@@ -202,7 +202,7 @@ class STEP_BY_STEP(Plugin):
         }
         self.json_list['data'].append(json_item)
         result = self.get_field_value()
-        if logs.isdebuggable:
+        if var.is_debug:
             print('FeildValue:', result)
         if not result:
             return
@@ -215,7 +215,7 @@ class STEP_BY_STEP(Plugin):
         self.fields[desc] = value
 
     def _process_mtd(self, mtd):
-        if logs.isdebuggable:
+        if var.is_debug:
             print('\n', '+' * 100)
             print('Starting to decode ...')
             print(Color.green(mtd))
@@ -249,7 +249,7 @@ class STEP_BY_STEP(Plugin):
                 continue
             new_body.append(line)  # 解密结果，直接放后面即可
 
-            if logs.isdebuggable:
+            if var.is_debug:
                 print(Color.blue(line))
 
             parts = line.split()
@@ -259,7 +259,7 @@ class STEP_BY_STEP(Plugin):
             # 命中下述关键字，则表示当前分支结束
             # 并根据上一个分支的情况，判断之前的分支是否可用
             if 'if-' in opcode:
-                if logs.isdebuggable:
+                if var.is_debug:
                     print('>' * 10, opcode)
                     print('this_block_key', this_block_key)
                     print('last_block_key', last_block_key)
@@ -290,7 +290,7 @@ class STEP_BY_STEP(Plugin):
                 this_block_key = 'if' + parts[-1]  # 表示接下来跑的代码块是这个语句的
                 keys.append(this_block_key)
 
-                if logs.isdebuggable:
+                if var.is_debug:
                     print('block_args - 运行后', block_args)
                 continue
             elif 'goto' in opcode:
@@ -299,7 +299,7 @@ class STEP_BY_STEP(Plugin):
             elif opcode.startswith(':cond_')\
                 or opcode.startswith(':try_start')\
                     or opcode.startswith('.catch_'):
-                if logs.isdebuggable:
+                if var.is_debug:
                     print('>' * 10, opcode)
                     print('this_block_key', this_block_key)
                     print('last_block_key', last_block_key)
@@ -321,7 +321,7 @@ class STEP_BY_STEP(Plugin):
                 this_block_key = opcode  # 表示接下来跑的代码块是这个语句的
                 keys.append(this_block_key)
 
-                if logs.isdebuggable:
+                if var.is_debug:
                     print('block_args - 运行后', block_args)
                 continue
             elif opcode.startswith(':try_start'):
@@ -383,7 +383,7 @@ class STEP_BY_STEP(Plugin):
             try:
                 snippet = self.process_if_statement(snippet)
 
-                if logs.isdebuggable:
+                if var.is_debug:
                     print(Color.red('开始处理解密参数 {}'.format(line)))
                     for l in snippet:
                         print(Color.red(l))
@@ -404,7 +404,7 @@ class STEP_BY_STEP(Plugin):
                 registers = self.emu.vm.variables
                 block_args[this_block_key] = registers
 
-                if logs.isdebuggable:
+                if var.is_debug:
                     print(snippet)
                     print('args:', args)
                     print('smali执行后，寄存器内容', registers)
@@ -452,7 +452,7 @@ class STEP_BY_STEP(Plugin):
             else:
                 arguments.append('Object:' + smali2java(ptypes[0]))
 
-            if logs.isdebuggable:
+            if var.is_debug:
                 print(Color.red('->>'))
                 print('参数类型', ptypes)
                 print('参数值', arguments)
@@ -485,7 +485,7 @@ class STEP_BY_STEP(Plugin):
                                   rtn_name)
 
             result = self.get_result(rtype)
-            if logs.isdebuggable:
+            if var.is_debug:
                 print("解密结果", result)
 
             self.json_list.clear()
@@ -517,7 +517,7 @@ class STEP_BY_STEP(Plugin):
                 block_args[this_block_key].update(args)
 
             # 把结果保存到当前分支
-            if logs.isdebuggable:
+            if var.is_debug:
                 print(block_args)
                 print('*' * 100)
             #     print('last_block_key', last_block_key)

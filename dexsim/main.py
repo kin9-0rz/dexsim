@@ -1,4 +1,3 @@
-from pyadb3 import ADB
 import argparse
 import os
 import re
@@ -10,7 +9,7 @@ import zipfile
 
 from cigam import Magic
 
-from dexsim import logs, var
+from dexsim import var
 from dexsim.driver import Driver
 from dexsim.oracle import Oracle
 
@@ -21,8 +20,7 @@ with open(os.path.join(main_path, 'datas', 'filters.txt')) as f:
     lines = f.read().splitlines()
 
 
-adb = ADB()
-PLUGIN_PATH = '/data/local/tmp/plugins/'
+
 
 
 def clean(smali_dir):
@@ -33,21 +31,6 @@ def clean(smali_dir):
             shutil.rmtree(xpath)
 
 
-def push_apk_to_device(apk_path):
-    adb.run_shell_cmd(['mkdir', PLUGIN_PATH])
-    adb.run_cmd(['push', apk_path, PLUGIN_PATH])
-    adb.run_shell_cmd(
-        ['am', 'start', '-n', 'mikusjelly.zerolib/mikusjelly.zero.MainActivity'])
-    adb.run_cmd(['forward', 'tcp:8888', 'tcp:9999'])
-
-
-def rm_device_file():
-    # 停止进程
-    adb.run_shell_cmd(['am', 'force-stop', 'mikusjelly.zerolib'])  # 停止进程
-    adb.run_cmd(['forward', '--remove-all'])
-    adb.run_shell_cmd(['rm', '-rf', PLUGIN_PATH])
-
-
 def dexsim(dex_file, smali_dir, includes):
     """执行解密
 
@@ -56,13 +39,13 @@ def dexsim(dex_file, smali_dir, includes):
         smali_dir ([type]): [description]
         includes ([type]): [description]
     """
-    push_apk_to_device(dex_file)
-
     driver = Driver()
+    driver.push_apk_to_device(dex_file)
+
     oracle = Oracle(smali_dir, driver, includes)
     oracle.divine()
 
-    rm_device_file()
+    # driver.rm_device_file()
 
 
 def baksmali(dex_file, output_dir='out'):
@@ -97,12 +80,11 @@ def smali(smali_dir, output_file='out.dex'):
 
 
 def main(args):
-    logs.isdebuggable = args.d
     var.is_debug = args.d
     includes = args.includes
 
     smali_dir = None
-    if logs.isdebuggable:
+    if var.is_debug:
         smali_dir = os.path.join(os.path.abspath(os.curdir), 'smali')
     else:
         smali_dir = tempfile.mkdtemp()
@@ -123,7 +105,7 @@ def main(args):
     elif Magic(args.f).get_type() == 'apk':
         apk_path = args.f
 
-        if logs.isdebuggable:
+        if var.is_debug:
             tempdir = os.path.join(os.path.abspath(os.curdir), 'tmp_dir')
             if not os.path.exists(tempdir):
                 os.mkdir(tempdir)
@@ -143,7 +125,7 @@ def main(args):
 
         # smali(smali_dir, dex_file)
         dexsim_dex(args.f, smali_dir, includes, output_dex)
-        if not logs.isdebuggable:
+        if not var.is_debug:
             shutil.rmtree(tempdir)
     elif Magic(args.f).get_type() == 'dex':
         dex_file = os.path.basename(args.f)
@@ -161,7 +143,7 @@ def dexsim_dex(dex_file, smali_dir, includes, output_dex):
         smali(smali_dir,
               os.path.splitext(os.path.basename(dex_file))[0] + '.sim.dex')
 
-    if not logs.isdebuggable:
+    if not var.is_debug:
         shutil.rmtree(smali_dir)
 
 # 通过python3 setup安装

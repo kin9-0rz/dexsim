@@ -6,36 +6,28 @@ from json import JSONEncoder
 
 import yaml
 from smaliemu.emulator import Emulator
+import smafile
 
-from dexsim import var
 from dexsim.plugin import Plugin
+from dexsim.var import arr_data_prog, is_debug, proto_ptn
 
 PLUGIN_CLASS_NAME = "TEMPLET"
 
 
 class TEMPLET(Plugin):
-    """
-    模板匹配
-
-    利用模板快速解密常见的解密方法
-    模板包含：参数、解密方法、返回值处理
-    解密常见的静态解密方法。
-    """
     name = "TEMPLET"
-    enabled = True
-    tname = None
+    enabled = False 
     index = 2
 
     def __init__(self, driver, smalidir):
         Plugin.__init__(self, driver, smalidir)
-        self.emu2 = Emulator()
         self.templets = []
         if not self.templets:
             self._init_templets()
 
     def _init_templets(self):
         """初始化解密模版
-        """        
+        """
         templets_path = os.path.dirname(__file__)[:-7] + 'templets'
         for filename in os.listdir(templets_path):
             file_path = os.path.join(templets_path, filename)
@@ -44,39 +36,28 @@ class TEMPLET(Plugin):
                     yaml.load(f.read(), Loader=yaml.SafeLoader))
 
     def run(self):
-        print('运行插件' + __name__)
+        print('运行插件：' + PLUGIN_CLASS_NAME)
 
         for templet in self.templets:
             for item in templet:
                 for key, value in item.items():
-                    dtype = value['type']
-                    if dtype != 1:
-                        continue
+                    if is_debug:
+                        logging.info('加载模版 ' + key)
 
-                    self.tname = key
-                    if not value['enabled']:
-                        continue
+                    protos = proto_ptn.findall(key.split(')')[0])
+                    prog = re.compile(''.join(value['pattern']))
 
-                    if var.is_debug:
-                        logging.info('加载模版 ' + self.tname)
-
-                    if value['protos']:
-                        protos = [i.replace('\\', '')
-                                  for i in value['protos']]
-                    else:
-                        protos = []
-
-                    ptn = ''.join(value['pattern'])
-
-                    self.__process(protos, ptn)
+                    self.decode_smalidir(protos, prog)
 
         self.optimize()
 
-    def __process(self, protos, pattern):
-        prog = re.compile(pattern)
+    def decode_smalidir(self, protos, prog):
+        """处理smali目录
 
-        arr_data_prog = re.compile(self.ARRAY_DATA_PATTERN)
-
+        Args:
+            protos ([type]): proto列表
+            prog ([type]): 模版正则
+        """
         for sf in self.smalidir:
             for mtd in sf.get_methods():
                 array_data_content = []
@@ -85,13 +66,15 @@ class TEMPLET(Plugin):
                     array_data_content = re.split(r'\n\s', result.group())
 
                 for i in prog.finditer(mtd.get_body()):
+                    groupdict = i.groupdict()
                     old_content = i.group()
-                    groups = i.groups()
 
-                    # 模板主要用于获取类、方法、返回寄存器、参数寄存器（可能存在无参）
-                    cls_name = groups[-3][1:].replace('/', '.')
-                    mtd_name = groups[-2]
-                    rtn_name = groups[-1]
+                    cls_name = smafile.smali2java(groupdict['class_name'])
+                    mtd_name = groupdict['method_name']
+                    rtn_name = groupdict['return_name']
+
+                    # v1, v2 or v1 .. v4
+                    argument_names = groupdict['argument_names']
 
                     if cls_name in ['java.lang.String']:
                         continue
@@ -105,9 +88,9 @@ class TEMPLET(Plugin):
                     argumentTypes = []
 
                     if protos:
-                        # rnames 存放寄存器名
+                        # rnames 临时存放参数的寄存器名
                         rnames = self.get_arguments_name(
-                            old_content, groups[-4])
+                            old_content, argument_names)
                         result = self.gen_arguments(
                             protos, rnames, self.emu.vm.variables)
                         if not result:
@@ -116,31 +99,34 @@ class TEMPLET(Plugin):
                         argumentTypes = result[1]
                     else:
                         arguments = []  # 无参
+                    
 
                     data = {
                         'className': cls_name,
                         'methodName': mtd_name,
                         'arguments': arguments,
                         'argumentTypes': argumentTypes,
+                        'returnType': 'String',
                     }
 
                     data_id = hashlib.sha256(JSONEncoder().encode(
                         data).encode('utf-8')).hexdigest()
 
-                    if self.results.get(data_id) == '解密失败':
+                    if self.fails.get(data_id) == '解密失败':
                         continue
 
                     if data_id in self.results:
                         self.append_context(
                             data_id, mtd, old_content, rtn_name)
                         continue
-
+                    
+                    logging.info(data)
                     result = self.driver.rpc_static_method(data)
 
                     if not result:
-                        self.results[data_id] = '解密失败'
+                        self.fails[data_id] = '解密失败'
                         continue
-
+                    
                     logging.info('解密结果: ' + result)
                     self.results[data_id] = result
                     self.append_context(data_id, mtd, old_content, rtn_name)
@@ -185,7 +171,7 @@ class TEMPLET(Plugin):
 
         Returns:
             [type]: 参数列表、参数类型列表
-        """        
+        """
         arguments = []
         argumentTypes = []
         if rnames is None:
@@ -202,8 +188,9 @@ class TEMPLET(Plugin):
             if result is None:
                 # 说明类型不支持
                 return ([], [])
-            argumentType, argument = result.split(':')
-            # print(argument, argumentType)
+            
+            argumentType = result[0]
+            argument = result[1]
             arguments.append(argument)
             argumentTypes.append(argumentType)
 

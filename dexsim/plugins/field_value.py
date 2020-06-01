@@ -9,7 +9,7 @@ import yaml
 from smafile import smali2java
 from smaliemu.emulator import Emulator
 
-from dexsim import logs
+from dexsim import var
 from dexsim.plugin import Plugin
 
 PLUGIN_CLASS_NAME = "FieldValue"
@@ -23,7 +23,7 @@ class FieldValue(Plugin):
     这个插件只需要执行一次
     """
     name = "FieldValue"
-    enabled = False 
+    enabled = True
     tname = None
     index = 0
 
@@ -50,32 +50,31 @@ class FieldValue(Plugin):
             if self.skip(sf):
                 continue
 
-            json_item = {
-                'className': smali2java(sf.get_class()),
-                'fieldName': []
-            }
+            class_name = smali2java(sf.get_class())
             counter = 0
             for f in sf.get_fields():
-                if 'Ljava/lang/String;' not in f.get_type():
+                if 'Ljava/lang/String;' != f.get_type():
                     continue
 
                 if f.get_value():
                     continue
 
-                if f.get_is_static():
-                    counter += 1
+                if not f.get_is_static():
+                    continue
 
                 # 格式:如果ID是FieldValue，则直接取对应的Field，不执行解密方法
-                json_item['fieldName'].append(f.get_name())
+                data = {
+                    'className': class_name,
+                    'fieldName': f.get_name(),
+                }
+                print(data)
+                resutl = self.driver.rpc_static_field(data)
+                print(resutl)
 
             # 没静态变量，则跳过
             if counter < 1:
                 continue
 
-            if json_item['fieldName']:
-                self.json_list['data'].append(json_item)
-
-        self.optimize()
 
     def skip(self, sf):
         '''
@@ -122,7 +121,7 @@ class FieldValue(Plugin):
         if isinstance(outputs, str):
             return False
 
-        if logs.isdebuggable:
+        if var.is_debug:
             for k, v in outputs.items():
                 print(k, v)
 

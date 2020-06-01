@@ -14,7 +14,7 @@ from json import JSONEncoder
 from smaliemu.emulator import Emulator
 from timeout3 import timeout
 
-from dexsim import logs
+from dexsim import var 
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +58,7 @@ class Plugin(object):
     fields = {}
 
     def __init__(self, driver, smalidir, mfilters=None):
+        self.fails = {}
         self.make_changes = False # 标记插件，是否优化过smali代码。
         self.driver = driver
         self.smalidir = smalidir
@@ -121,28 +122,28 @@ class Plugin(object):
         if typ8 == 'I':
             if not isinstance(value, int):
                 return None
-            return 'I:' + str(value)
+            return 'int', str(value)
 
         if typ8 == 'B':
             if not isinstance(value, int):
                 return None
-            return 'B:' + str(value)
+            return 'byte', str(value)
 
         if typ8 == 'S':
             if not isinstance(value, int):
                 return None
-            return 'S:' + str(value)
+            return 'short', str(value)
 
         if typ8 == 'C':
             # don't convert to char, avoid some unreadable chars.
-            return 'C:' + str(value)
+            return 'chat', str(value)
 
         if typ8 == 'Ljava/lang/String;':
             if not isinstance(value, str):
                 return None
             # smali 会把非ascii字符串转换为unicode字符串
             # java 可以直接处理unicode字符串
-            return "java.lang.String:" + value
+            return 'String', value
         if typ8 == '[B':
             if not isinstance(value, list):
                 return None
@@ -151,7 +152,7 @@ class Plugin(object):
                 if item == '':
                     item = 0
                 byte_arr.append(item)
-            return '[B:' + str(byte_arr)
+            return 'byte[]', str(byte_arr)
 
         if typ8 == '[C':
             if not isinstance(value, list):
@@ -161,7 +162,7 @@ class Plugin(object):
                 if item == '':
                     item = 0
                 byte_arr.append(item)
-            return '[C:' + str(byte_arr)
+            return 'char[]', str(byte_arr)
 
         logger.warning('不支持该类型 %s %s', typ8, value)
 
@@ -340,8 +341,6 @@ class Plugin(object):
             None
 
         """
-        # self.json_list.clear()
-        # self.target_contexts.clear()
         self.results.clear()
         self.contexts.clear()
 

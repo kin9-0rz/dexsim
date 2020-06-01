@@ -1,0 +1,45 @@
+# 存放第一个参数是Ljava/lang/String;的模版
+
+- ()Ljava/lang/String;:
+    pattern:
+      - invoke-static(?:\/range|) \{(?P<argument_names>.*?)\}, (?P<class_name>.*?)->(?P<method_name>.*?)
+      - \(\)Ljava/lang/String;\s*
+      - move-result-object (?P<return_name>.*?)\s
+- (Ljava/lang/String;)Ljava/lang/String;:
+    pattern:
+      - const-string .*?, ".*?"\s*
+      - invoke-static(?:\/range|) \{(?P<argument_names>.*?)\}, (?P<class_name>.*?)->(?P<method_name>.*?)
+      - \(Ljava/lang/String;\)Ljava/lang/String;\s*
+      - move-result-object (?P<return_name>.*?)\s
+- (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;:
+    pattern:
+      - const-string .*?, ".*?"\s*
+      - const-string .*?, ".*?"\s*
+      - invoke-static(?:\/range|) \{(?P<argument_names>.*?)\}, (?P<class_name>.*?)->(?P<method_name>.*?)
+      - \(Ljava/lang/String;Ljava/lang/String;\)Ljava/lang/String;\s*
+      - move-result-object (?P<return_name>.*?)\s
+- (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;:
+    pattern:
+      - const-string .*?, ".*?"\s*
+      - const-string .*?, ".*?"\s*
+      - const-string .*?, ".*?"\s*
+      - invoke-static(?:\/range|) \{(?P<argument_names>.*?)\}, (?P<class_name>.*?)->(?P<method_name>.*?)
+      - \(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;\)Ljava/lang/String;\s*
+      - move-result-object (?P<return_name>.*?)\s
+- (Ljava/lang/String;CC)Ljava/lang/String;:
+    pattern:
+      - const-string (.*?), "(.*?)"\s*
+      - const\/\d+ (.*?), (.*?)\s*
+      - const\/\d+ (.*?), (.*?)\s*
+      - invoke-static(?:\/range|) \{(?P<argument_names>.*?)\}, (?P<class_name>.*?)->(?P<method_name>.*?)
+      - \(Ljava/lang/String;CC\)Ljava/lang/String;\s*
+      - move-result-object (?P<return_name>.*?)\s
+- (Ljava/lang/String;CCC)Ljava/lang/String;:
+    pattern:
+      - const-string (.*?), "(.*?)"\s*
+      - const\/\d+ (.*?), (.*?)\s*
+      - const\/\d+ (.*?), (.*?)\s*
+      - const\/\d+ (.*?), (.*?)\s*
+      - invoke-static(?:\/range|) \{(?P<argument_names>.*?)\}, (?P<class_name>.*?)->(?P<method_name>.*?)
+      - \(Ljava/lang/String;CCC\)Ljava/lang/String;\s*
+      - move-result-object (?P<return_name>.*?)\s
